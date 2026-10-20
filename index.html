@@ -52,6 +52,10 @@ button:focus-visible{outline:2px solid var(--shu);outline-offset:2px}
 #joy{position:fixed;width:116px;height:116px;margin:-58px 0 0 -58px;border-radius:50%;border:1.5px solid rgba(238,240,241,.35);background:rgba(17,18,20,.25);pointer-events:none;z-index:3}
 #joy i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(238,240,241,.85)}
 
+#pjChip{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 172px);display:flex;align-items:center;gap:8px;padding:7px 12px 7px 10px;border-radius:999px;border:1px solid rgba(210,69,44,.5);background:var(--panel);font-size:12px;cursor:pointer;z-index:4;white-space:nowrap;max-width:calc(100% - 150px);overflow:hidden}
+#pjChip .dot{width:8px;height:8px;border-radius:50%;background:var(--shu);box-shadow:0 0 8px var(--shu);flex:none}
+#pjChip small{color:var(--mute);font-size:11px}
+#pjChip.off .dot{background:#777;box-shadow:none}
 #hint{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translateX(-50%);padding:8px 14px;border-radius:999px;background:var(--panel);font-size:12px;color:var(--ink);white-space:nowrap;pointer-events:none;transition:opacity .6s;z-index:4}
 
 #card{position:fixed;left:calc(env(safe-area-inset-left,0px) + 12px);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);width:min(430px,calc(100% - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)));max-height:min(62vh,520px);overflow:auto;background:var(--panel-solid);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;z-index:10;box-shadow:0 18px 50px rgba(0,0,0,.5)}
@@ -131,6 +135,7 @@ button:focus-visible{outline:2px solid var(--shu);outline-offset:2px}
 <button id="poi" hidden><span class="dia"></span><span class="nm" id="poiName"></span><span class="go">解説</span></button>
 <div id="joy" hidden><i id="knob"></i></div>
 <div id="hint" hidden></div>
+<button id="pjChip" hidden aria-label="プロジェクションマッピングの上映を切り替える"><span class="dot"></span><span id="pjTitle">プロジェクションマッピング</span><small id="pjState">停止</small></button>
 
 <section id="card" hidden aria-live="polite">
   <button class="x" id="cardX" aria-label="閉じる">×</button>
@@ -387,6 +392,12 @@ const M={
   dote:std({map:tDote,roughness:1})
 };
 for(const k in M){ if(M[k].color) M[k].color.convertSRGBToLinear(); if(M[k].emissive) M[k].emissive.convertSRGBToLinear(); }
+const PJU={uPJ:{value:0},uPT:{value:0}};
+const PJ_GLSL='\nuniform float uPJ,uPT;\nvarying vec3 vPjW,vPjN;\nfloat pjH(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }\nvec3 pjHsv(float h,float s,float v){ vec3 k=clamp(abs(mod(h*6.+vec3(0.,4.,2.),6.)-3.)-1.,0.,1.); return v*mix(vec3(1.),k,s); }\nvec3 pjScene(vec2 uv,float t,float ch){\n  vec2 p=vec2(uv.x*1.94,uv.y); vec3 c=vec3(0.);\n  if(ch<.5){ float sw=exp(-pow((uv.y-fract(t/5.)*1.2+.1)*9.,2.)); float g1=smoothstep(.07,0.,abs(fract(uv.y*14.)-.5)-.38); float g2=smoothstep(.07,0.,abs(fract(p.x*7.)-.5)-.4);\n    c=vec3(1.,.72,.32)*(max(g1,g2)*.35*smoothstep(0.,4.,t)+sw*1.6)+vec3(.04,.05,.12); }\n  else if(ch<1.5){ c=mix(vec3(.03,.04,.16),vec3(.16,.06,.18),uv.y); for(int L=0;L<2;L++){ float fl=float(L); vec2 g=p*vec2(7.+fl*4.,5.+fl*3.); g.y-=t*(.45+fl*.3); g.x+=sin(g.y*.7+fl)*.3; vec2 id=floor(g),f=fract(g)-.5; float on=step(.45,pjH(id+fl*7.)); float r=.16+.1*pjH(id+3.);\n      float d=length(f*vec2(1.,.75)); c+=on*(smoothstep(r,r-.04,d)*vec3(1.,.55,.18)*1.6+exp(-d*7.)*vec3(1.,.4,.1)*.5); } }\n  else if(ch<2.5){ vec2 q=p-vec2(.97,.56); float a=atan(q.y,q.x),r=length(q); float pat=sin(a*8.+t*.8)*sin(r*28.-t*2.5); float k=smoothstep(-.2,.12,pat);\n    c=pjHsv(fract(a/6.2832*2.+t*.06+r),.75,1.)*k*1.6+pjHsv(fract(t*.05+.5),.6,.4); c*=smoothstep(1.5,.2,r); }\n  else if(ch<3.5){ float m=.38+.13*sin(p.x*3.1+t*.25)+.05*sin(p.x*11.-t*.4)+.03*sin(p.x*23.); c=mix(vec3(.02,.06,.2),vec3(.1,.3,.6),uv.y);\n    float mt=smoothstep(m+.005,m-.005,uv.y); c=mix(c,vec3(.06,.12,.3),mt); float snow=mt*smoothstep(m-.07,m-.01,uv.y); c+=snow*vec3(.9,.95,1.)*.9;\n    float wv=smoothstep(.05,0.,abs(sin(p.x*9.+t*1.6+uv.y*30.)*.5+.5-uv.y*3.))*step(uv.y,.22); c+=wv*vec3(.4,.8,1.)*.8; c+=step(.996,pjH(floor(p*80.)))*step(m,uv.y)*vec3(1.); }\n  else if(ch<4.5){ c=mix(vec3(.25,.05,.15),vec3(.6,.2,.35),uv.y)*.6; for(int L=0;L<3;L++){ float fl=float(L); vec2 g=p*vec2(9.+fl*5.,6.+fl*4.); g.y+=t*(.7+fl*.35); g.x+=sin(t*.6+g.y*.4+fl)*.6; vec2 id=floor(g),f=fract(g)-.5;\n      float on=step(.35,pjH(id+fl*11.)); float an=pjH(id)*6.28+t*1.5; vec2 rf=mat2(cos(an),-sin(an),sin(an),cos(an))*f; float d=length(rf*vec2(1.,1.9)); c+=on*smoothstep(.2,.14,d)*vec3(1.,.62,.78)*1.4; } }\n  else { vec2 q=p-vec2(.97,1.15); float a=atan(q.y,q.x); float rays=pow(abs(sin(a*12.+t*1.4)),18.); float fl=smoothstep(14.,15.2,t)*smoothstep(16.,15.4,t);\n    c=mix(vec3(.25,.12,.04),vec3(.9,.65,.25),uv.y)*.7+vec3(1.,.8,.4)*rays*1.3+vec3(1.)*fl*2.; }\n  return c; }\nvec3 pjShow(){ if(uPJ<.01) return vec3(0.); vec3 w=vPjW; if(w.x<-80.||w.x>-12.||w.z<20.||w.z>80.) return vec3(0.);\n  vec2 uv=vec2((w.x+46.)/68.,(w.y+3.5)/34.); float face=clamp(vPjN.z*.85+.3,0.,1.);\n  float T=mod(uPT,96.),ch=floor(T/16.),lt=T-ch*16.; float fade=smoothstep(0.,1.,lt)*smoothstep(16.,15.,lt);\n  return pjScene(uv,lt,ch)*fade*face*uPJ; }\n';
+function addPJ(m){ m.onBeforeCompile=sh=>{ sh.uniforms.uPJ=PJU.uPJ; sh.uniforms.uPT=PJU.uPT;
+  sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vPjW,vPjN;').replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvPjW=(modelMatrix*vec4(transformed,1.0)).xyz; vPjN=normalize(mat3(modelMatrix)*objectNormal);');
+  sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+PJ_GLSL).replace('vec3 outgoingLight =','totalEmissiveRadiance+=pjShow()*(0.45+0.9*diffuseColor.rgb);\n\tvec3 outgoingLight ='); }; m.customProgramCacheKey=()=>'pj'; }
+[M.cwall,M.stone,M.roof,M.plaster,M.ridge,M.shu,M.black].forEach(addPJ);
 const stoneBack=M.stone.clone(); stoneBack.side=THREE.BackSide; const doteBack=M.dote.clone(); doteBack.side=THREE.BackSide;
 
 /* ---------- geometry helpers ---------- */
@@ -857,12 +868,26 @@ const TIMES=[
   {name:'夕',top:'#33467a',hor:'#f2a467',sun:[-.86,.09,.42],sunC:'#ff9550',sunI:1.5,hs:'#a993a7',hg:'#4b3b33',hi:.6,fog:'#c99580',exp:1.05,night:.15,lamp:.7},
   {name:'夜',top:'#060914',hor:'#1b2440',sun:[-.25,.62,.55],sunC:'#a8bde8',sunI:.3,hs:'#3a4a72',hg:'#101114',hi:.45,fog:'#182038',exp:1.15,night:1,lamp:2.2}];
 let timeIdx=1; const sunDir=V3(0,1,0);
+const lasers=new THREE.Group(); lasers.visible=false; scene.add(lasers);
+{ const lg=new THREE.CylinderGeometry(.06,.06,160,6,1,true); lg.translate(0,80,0);
+  [[-34,1,104],[-26,1,106],[-18,1,104],[-48,1,106],[-58,1,104],[-10,1,106],[-66,1,106],[2,1,104]].forEach((q,i)=>{ const m=new THREE.Mesh(lg,new THREE.MeshBasicMaterial({color:i%3===2?0xffffff:(i%2?0x38ff9a:0x5ad1ff),transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));
+    const g=new THREE.Group(); g.position.set(...q); g.add(m); g.userData.ph=i*.8; lasers.add(g); }); }
+const PJ_TITLES=['光の輪郭','城下の灯り','手まりの彩り','北アルプスと水','桜の天守','光の物語'];
+let pjOn=true,pjTime=0,pjLastCh=-1;
+function pjActive(){ return pjOn&&TIMES[timeIdx].night>.5&&MODE==='modern'; }
+function updatePJ(dt){ const show=TIMES[timeIdx].night>.5&&MODE==='modern'; $('pjChip').hidden=!started||!show; $('pjChip').classList.toggle('off',!pjOn);
+  const act=pjActive(); PJU.uPJ.value+=((act?1:0)-PJU.uPJ.value)*Math.min(1,dt*1.5); if(act) pjTime+=dt; PJU.uPT.value=pjTime;
+  spots.forEach(s=>s.intensity=show?(1.6*(1-PJU.uPJ.value*.85)):0);
+  const T=pjTime%96,ch=Math.floor(T/16),lt=T-ch*16; if(act&&ch!==pjLastCh){ pjLastCh=ch; $('pjTitle').textContent='第'+(ch+1)+'景 '+PJ_TITLES[ch]; }
+  if(!act){ $('pjTitle').textContent='プロジェクションマッピング'; pjLastCh=-1; } $('pjState').textContent=pjOn?'上映中 · タップで停止':'停止中 · タップで上映';
+  const lz=act&&(ch===0||ch===3||ch===5)&&lt>1.5&&lt<14.8; lasers.visible=lz&&PJU.uPJ.value>.5;
+  if(lasers.visible) lasers.children.forEach((g,i)=>{ const ph=g.userData.ph; g.rotation.z=Math.sin(pjTime*(.5+.1*i)+ph)*.55; g.rotation.x=-.25-Math.abs(Math.sin(pjTime*.35+ph))*.45; g.children[0].material.opacity=(ch===5?.75:.5)*(.6+.4*Math.sin(pjTime*6+i)); }); }
 function applyTime(i){ timeIdx=i; const T=TIMES[i]; sunDir.set(...T.sun).normalize();
   skyMat.uniforms.top.value.set(T.top); skyMat.uniforms.hor.value.set(T.hor); skyMat.uniforms.sunDir.value.copy(sunDir); skyMat.uniforms.sunCol.value.set(T.sunC).multiplyScalar(T.night>.5?.5:1); skyMat.uniforms.stars.value=T.night>.5?.9:0;
   sun.color.set(T.sunC); sun.intensity=T.sunI; hemi.color.set(T.hs); hemi.groundColor.set(T.hg); hemi.intensity=T.hi; scene.fog.color.set(T.fog); renderer.toneMappingExposure=T.exp;
   waterMat.uniforms.uSky.value.set(T.hor); waterMat.uniforms.uSunDir.value.copy(sunDir); waterMat.uniforms.uSunCol.value.set(T.sunC).multiplyScalar(T.night>.5?.25:1);
   waterMat.uniforms.uWater.value.set(T.night>.5?'#0d1416':'#2b3c33');
-  spots.forEach(s=>s.intensity=(T.night>.5&&MODE==='modern')?1.6:0); M.machiya.emissiveIntensity=T.night>.5?.9:T.night*.5; M.lantern.emissiveIntensity=T.lamp; M.facade.emissiveIntensity=T.night>.5?.85:T.night*.6; M.city.emissiveIntensity=T.night>.5?.05:0; M.inWall.emissiveIntensity=[.7,.8,.45,.08][i]; M.lampIn.emissiveIntensity=T.night>.5?2.2:1.2;
+  M.machiya.emissiveIntensity=T.night>.5?.9:T.night*.5; M.lantern.emissiveIntensity=T.lamp; M.facade.emissiveIntensity=T.night>.5?.85:T.night*.6; M.city.emissiveIntensity=T.night>.5?.05:0; M.inWall.emissiveIntensity=[.7,.8,.45,.08][i]; M.lampIn.emissiveIntensity=T.night>.5?2.2:1.2;
   $('vTime').textContent=T.name; }
 
 /* ---------- reflection ---------- */
@@ -1020,6 +1045,7 @@ function setMode(m){ MODE=m; GM.visible=m==='modern'; GE.visible=m==='edo'; mapC
   $('vEra').textContent=m==='edo'?'江戸':'現代'; $('eyebrow').textContent='松本城さんぽ · '+(m==='edo'?'江戸後期':'現代'); applyTime(timeIdx);
   if(started&&P.level<0&&P.mode==='walk'&&!walkable(P.x,P.z)){ const s=curSpots.reduce((a,b)=>Math.hypot(b.pos[0]-P.x,b.pos[1]-P.z)<Math.hypot(a.pos[0]-P.x,a.pos[1]-P.z)?b:a); teleport(s); }
   if(started) showHint(m==='edo'?'江戸後期（1800年代前半ごろ）の松本を再現しています':'現代の松本に戻りました'); }
+$('pjChip').onclick=()=>{ pjOn=!pjOn; if(pjOn) showHint('プロジェクションマッピングを上映します'); };
 $('tEra').onclick=()=>setMode(MODE==='edo'?'modern':'edo');
 $('tQual').onclick=()=>{ quality=quality==='high'?'low':'high'; $('vQual').textContent=quality==='high'?'高':'軽'; waterMat.uniforms.uRefl.value=quality==='high'?1:0; applyPR(); renderer.setSize(innerWidth,innerHeight); sizeRT(); setShadow(); };
 function updateHUD(){ const a=P.level>=0?FL[P.level].name:areaAt(P.x,P.z); if(a!==lastArea){ lastArea=a; $('area').textContent=a; }
@@ -1037,7 +1063,7 @@ let last=performance.now(),clock=0,fr=0; const _tgt=V3();
 function frame(now){ const dt=Math.min(.05,(now-last)/1000); last=now; clock+=dt; fr++;
   if(started) updatePlayer(dt); else attract(dt);
   for(const s of swans){ const a=clock*s.sp*6.283*.25+s.ph; const x=s.cx+Math.cos(a)*s.rx,z=s.cz+Math.sin(a)*s.rz; const tx=-Math.sin(a)*s.rx,tz=Math.cos(a)*s.rz; s.g.position.set(x,WATER_Y-.05+Math.sin(clock*1.3+s.ph)*.03,z); s.g.rotation.y=Math.atan2(tx,tz); }
-  waterMat.uniforms.uTime.value=clock; sky.position.copy(camera.position);
+  updatePJ(dt); waterMat.uniforms.uTime.value=clock; sky.position.copy(camera.position);
   if(started) _tgt.set(P.x,0,P.z); else _tgt.set(-48,0,58);
   sun.position.copy(_tgt).addScaledVector(sunDir,320); sun.target.position.copy(_tgt); sun.target.updateMatrixWorld();
   renderer.shadowMap.needsUpdate=true; camera.updateMatrixWorld();
