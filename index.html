@@ -61,6 +61,28 @@ button:focus-visible{outline:2px solid var(--shu);outline-offset:2px}
 #card dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
 #card dt{color:var(--mute);letter-spacing:.08em}
 #card dd{margin:0}
+.photos{display:flex;gap:8px;overflow-x:auto;margin:0 -18px 12px;padding:0 18px 2px;scroll-snap-type:x mandatory;touch-action:pan-x}
+.photos figure{margin:0;flex:0 0 84%;scroll-snap-align:start;min-width:0}
+.photos img,.photos .ph{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#26282c;display:block}
+.photos .ph{display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--mute);text-align:center;padding:12px;box-sizing:border-box}
+.photos figcaption{font-size:11px;color:var(--mute);margin-top:5px;line-height:1.5}
+.photos a,.sp-src a{color:var(--mute)}
+.card-nav{display:flex;gap:8px;margin-top:14px}
+.card-nav button{flex:1;height:40px;border-radius:10px;border:1px solid var(--line);background:transparent;cursor:pointer;font-size:13px}
+#spotsBtn{position:fixed;top:calc(env(safe-area-inset-top,0px) + 128px);right:calc(env(safe-area-inset-right,0px) + 12px);height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px}
+#spotsBtn::before{content:"";width:7px;height:7px;background:var(--shu);transform:rotate(45deg)}
+#spots{position:fixed;inset:0;z-index:20;background:rgba(12,13,15,.96);display:flex;flex-direction:column;gap:12px;overflow:auto;touch-action:pan-y;padding-top:calc(env(safe-area-inset-top,0px) + 12px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#spots header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#spots h2{font-family:var(--f-disp);font-weight:800;font-size:22px;margin:0;letter-spacing:.06em}
+#spots .x{height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:transparent;cursor:pointer}
+.sp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px}
+.sp-card{display:grid;grid-template-columns:100px 1fr;gap:12px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:12px;background:rgba(238,240,241,.03);text-align:left;cursor:pointer;min-width:0}
+.sp-card .th{width:100px;height:75px;border-radius:8px;object-fit:cover;background:#26282c;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:10px}
+.sp-card b{font-family:var(--f-disp);font-size:16px;font-weight:800;display:block}
+.sp-card small{color:var(--mute);font-size:11px;display:block;margin-bottom:3px}
+.sp-card span{font-size:12px;color:var(--ink);opacity:.8;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5}
+.sp-src{font-size:11px;color:var(--mute);line-height:1.6}
+@media (min-width:760px){ #spotsBtn{top:calc(env(safe-area-inset-top,0px) + 152px)} }
 #card .x{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:transparent;cursor:pointer;font-size:18px;line-height:1}
 
 #map{position:fixed;inset:0;z-index:20;background:rgba(12,13,15,.95);display:flex;flex-direction:column;padding-top:calc(env(safe-area-inset-top,0px) + 12px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 12px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));gap:12px;overflow:auto;touch-action:pan-y}
@@ -97,6 +119,7 @@ button:focus-visible{outline:2px solid var(--shu);outline-offset:2px}
 
 <div class="place"><div class="eyebrow" id="eyebrow">松本城さんぽ · 現代</div><div class="area" id="area">本丸</div></div>
 <button id="mini" aria-label="地図を開く"><canvas id="miniC"></canvas><span class="n">北</span><span class="tap">地図</span></button>
+<button id="spotsBtn" aria-label="名所の一覧を開く">名所一覧</button>
 
 <div class="tools">
   <button class="tool" id="tView" aria-label="視点の切り替え"><small>視点</small><b id="vView">歩く</b></button>
@@ -113,8 +136,10 @@ button:focus-visible{outline:2px solid var(--shu);outline-offset:2px}
   <button class="x" id="cardX" aria-label="閉じる">×</button>
   <div class="kana" id="cKana"></div>
   <h2 id="cName"></h2>
+  <div class="photos" id="cPhotos"></div>
   <p id="cText"></p>
   <dl id="cMeta"></dl>
+  <div class="card-nav" id="cNav"><button id="cPrev">◀ 前の名所</button><button id="cNext">次の名所 ▶</button></div>
 </section>
 
 <section id="map" hidden>
@@ -124,6 +149,12 @@ button:focus-visible{outline:2px solid var(--shu);outline-offset:2px}
     <div class="spotlist" id="spotList"></div>
   </div>
   <div class="note">ピンか一覧をタップすると、その場所へ移動します。</div>
+</section>
+
+<section id="spots" hidden>
+  <header><h2>名所めぐり</h2><button class="x" id="spotsX">閉じる</button></header>
+  <div class="sp-grid" id="spGrid"></div>
+  <div class="sp-src">写真は Wikimedia Commons の利用条件（クリエイティブ・コモンズ等）のもとで表示しています。撮影者とライセンスは各写真の「出典」から確認できます。</div>
 </section>
 
 <section id="start">
@@ -190,15 +221,21 @@ function TM(x,y,z,ry,sx,sy,sz,rx,rz){ const q=new THREE.Quaternion().setFromEule
 function mesh(geo,mat,cast,recv){ const m=new THREE.Mesh(geo,mat); m.castShadow=cast!==false; m.receiveShadow=recv!==false; return m; }
 
 /* ---------- textures ---------- */
-const cStone=makeCanvas(512,512);{ const g=cStone.getContext('2d'); g.fillStyle='#2a2926'; g.fillRect(0,0,512,512);
-  let y=-6; while(y<512){ const rh=34+rnd()*32; let x=-rnd()*50; while(x<512){ const rw=44+rnd()*72; const l=(80+rnd()*64)|0;
-    const pts=[[3+rnd()*7,3+rnd()*7],[rw-3-rnd()*7,3+rnd()*7],[rw-3-rnd()*7,rh-3-rnd()*7],[3+rnd()*7,rh-3-rnd()*7]];
-    for(const ox of [0,-512,512]){ const bx=x+ox; if(bx+rw<0||bx>512) continue;
-      const gr=g.createLinearGradient(bx,y,bx+rw,y+rh); gr.addColorStop(0,`rgb(${l+20},${l+17},${l+11})`); gr.addColorStop(1,`rgb(${l-16},${l-15},${l-17})`);
-      g.fillStyle=gr; g.beginPath(); pts.forEach((p,i)=>i?g.lineTo(bx+p[0],y+p[1]):g.moveTo(bx+p[0],y+p[1])); g.closePath(); g.fill(); }
-    x+=rw; } y+=rh; }
-  speckle(g,512,512,9000,.18); }
-const tStone=toTex(cStone);
+/* 野面積み: 加工しない自然石を不揃いに積み、すき間を小さな間詰め石で埋める */
+const SN=512, cStone=makeCanvas(SN,SN), cStoneH=makeCanvas(SN,SN);
+{ const pts=[],G=6,GX=7;
+  for(let j=0;j<G;j++) for(let i=0;i<GX;i++) pts.push([(i+.15+rnd()*.7)*SN/GX,(j+.15+rnd()*.7)*SN/G,.85+rnd()*.35]);
+  for(let k=0;k<55;k++) pts.push([rnd()*SN,rnd()*SN,1.7+rnd()*.8]);
+  const cols=pts.map(()=>{ const l=86+rnd()*66,t=rnd(),warm=rnd()<.35?14:0; return [l+6*t+warm,l+3*t+warm*.5,l-5*t-warm*.3]; });
+  const NB=8,cs=SN/NB,buck=[...Array(NB*NB)].map(()=>[]); pts.forEach((q,i)=>buck[(Math.floor(q[1]/cs)%NB)*NB+(Math.floor(q[0]/cs)%NB)].push(i));
+  const gc1=cStone.getContext('2d'),gh=cStoneH.getContext('2d'),ci=gc1.createImageData(SN,SN),hi=gh.createImageData(SN,SN);
+  for(let y=0;y<SN;y++) for(let x=0;x<SN;x++){ let d1=1e9,d2=1e9,id=0; const bx=Math.floor(x/cs),by=Math.floor(y/cs);
+    for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++){ const l=buck[((by+oy+NB)%NB)*NB+((bx+ox+NB)%NB)]; for(const i of l){ const q=pts[i]; let dx=x-q[0],dy=y-q[1]; dx-=Math.round(dx/SN)*SN; dy-=Math.round(dy/SN)*SN; const d=Math.hypot(dx*.8,dy)*q[2]; if(d<d1){ d2=d1; d1=d; id=i; } else if(d<d2) d2=d; } }
+    const e=(d2-d1)/2,k=(y*SN+x)*4,n=vnoise(x*.06+id*7.3,y*.06)*.6+vnoise(x*.21,y*.21+id)*.4; let h=Math.pow(Math.min(1,e/20),.5),r,g,b;
+    if(e<1.9){ const v=34+n*22; r=v+4; g=v+2; b=v; h=0; } else { const c=cols[id],sh=.5+.5*h+(n-.5)*.38; r=c[0]*sh; g=c[1]*sh; b=c[2]*sh; if(n>.78){ r+=10; g+=12; b+=4; } }
+    ci.data[k]=r; ci.data[k+1]=g; ci.data[k+2]=b; ci.data[k+3]=255; const hv=Math.max(0,Math.min(255,(h*.8+n*.2)*255)); hi.data[k]=hi.data[k+1]=hi.data[k+2]=hv; hi.data[k+3]=255; }
+  gc1.putImageData(ci,0,0); gh.putImageData(hi,0,0); }
+const tStone=toTex(cStone), tStoneH=toTex(cStoneH,false);
 
 const cWall=makeCanvas(256,512);{ const g=cWall.getContext('2d'); g.fillStyle='#141517'; g.fillRect(0,0,256,512);
   g.fillStyle='#e7e6e1'; g.fillRect(0,0,256,92); speckle(g,256,92,700,.12);
@@ -314,9 +351,9 @@ function hitBlock(x,z,m){ return hitIn(BSETS.shared,x,z,m)||hitIn(BSETS[MODE],x,
 /* ---------- materials ---------- */
 const std=o=>new THREE.MeshStandardMaterial(o);
 const M={
-  stone:std({map:tStone,roughness:.93,color:0xd9d6cf}),
+  stone:std({map:tStone,bumpMap:tStoneH,bumpScale:1.4,roughness:.93,color:0xe2ded6}),
   cwall:std({map:tWall,roughness:.72}),
-  roof:std({map:tRoof,roughness:.6,metalness:.15,side:THREE.DoubleSide}),
+  roof:std({map:tRoof,bumpMap:tRoof,bumpScale:.6,roughness:.6,metalness:.15,side:THREE.DoubleSide}),
   ridge:std({color:0x2a2d32,roughness:.55,metalness:.25}),
   plaster:std({map:tPlaster,roughness:.9,side:THREE.DoubleSide}),
   black:std({color:0x151618,roughness:.55}),
@@ -443,8 +480,8 @@ function groundGeo(shape){ const g=new THREE.ShapeGeometry(shape,1); g.rotateX(-
   const far=mesh(new THREE.RingGeometry(1150,7000,64,1),M.far,false,false); far.rotation.x=-Math.PI/2; far.position.y=-.6; scene.add(far); }
 
 /* moat + river walls */
-{ const iw=mesh(frustumGeo(140,135,3.55,.9,3),M.stone,false,true); iw.position.set(0,-3.5,2.5); scene.add(iw);
-  const ow=mesh(frustumGeo(210,200,3.55,-.9,3),stoneBack,false,true); ow.position.set(0,-3.5,0); scene.add(ow);
+{ const iw=mesh(frustumGeo(140,135,3.55,.9,5),M.stone,false,true); iw.position.set(0,-3.5,2.5); scene.add(iw);
+  const ow=mesh(frustumGeo(210,200,3.55,-.9,5),stoneBack,false,true); ow.position.set(0,-3.5,0); scene.add(ow);
   const lb=mesh(boxUVGeo(35,3.5,14,3,3),M.stone,false,true); lb.position.set(87.5,-1.73,17); scene.add(lb);
   const nw=mesh(scaleUV(new THREE.PlaneGeometry(2300,3.6),2300/3,1.2),M.stone,false,true); nw.position.set(0,-1.8,212); scene.add(nw);
   const sw=nw.clone(); sw.rotation.y=Math.PI; sw.position.z=228; scene.add(sw); }
@@ -469,7 +506,7 @@ function tower(cx,y0,cz,levels,oh,ry){ const g=new THREE.Group(); g.position.set
     else { const r=hipGableRoof(L.w,L.d,oh+.2); r.position.y=ey; g.add(r); }
     y+=L.h; });
   return {g,info}; }
-function base(cx,cz,w,d,top,bat,cap){ const m=mesh(frustumGeo(w,d,top+3.5,bat,3,cap!==false),M.stone); m.position.set(cx,-3.5,cz); castle.add(m); }
+function base(cx,cz,w,d,top,bat,cap){ const m=mesh(frustumGeo(w,d,top+3.5,bat,5,cap!==false),M.stone); m.position.set(cx,-3.5,cz); castle.add(m); }
 
 base(-58,60,18,18,6,2.0,false); base(-58,33,14,12,5.5,1.6); base(-58,45.5,8,10,5.5,1.2); base(-41.5,63,13,12,5.5,1.6); base(-27.5,63.5,13,11,4.6,1.4);
 block(-68.5,49.5,-47.5,70.5,'castle'); block(-66.5,26.5,-49.5,41.5,'castle'); block(-63.5,40,-52.5,51,'castle'); block(-49.5,55.5,-33.5,70.5,'castle'); block(-35.5,56.5,-19.6,70.5,'castle');
@@ -846,23 +883,23 @@ sizeRT();
 /* ---------- spots & areas ---------- */
 const SPOTS=[
   {id:'ote',edoOnly:true,name:'大手門',kana:'おおてもん',at:[-20,168],pos:[-26.5,191],look:[-26.5,4,170],text:'城の正面の門。四角い枡形（ますがた）の両端に門があり、町側の門をくぐると向きを変え、北側の大きな門から城内へ進む造りでした。明治の初めに取り壊され、跡地は千歳橋の北側付近で発掘調査も行われています。',meta:[['構造','桝形'],['取り壊し','明治の初め']]},
-  {id:'tenshu',name:'大天守',kana:'だいてんしゅ',at:[-58,60],pos:[-6,113],look:[-56,14,62],text:'外から見ると五重、内部は六階のつくり。文禄年間（1593〜94年頃）に築かれたと伝わり、江戸時代以前の天守が今も残る「現存天守」のひとつです。黒い下見板張りの外壁から「烏城（からすじょう）」とも呼ばれます。',meta:[['指定','国宝（1952年）'],['構造','五重六階'],['外壁','黒漆塗りの下見板']]},
+  {id:'tenshu',photos:[['Keep_of_Matsumoto_Castle.JPG','大天守（現在の様子）'],['Matsumoto_Matsumoto-jo_bei_Nacht_03.jpg','夜のライトアップ']],name:'大天守',kana:'だいてんしゅ',at:[-58,60],pos:[-6,113],look:[-56,14,62],text:'外から見ると五重、内部は六階のつくり。文禄年間（1593〜94年頃）に築かれたと伝わり、江戸時代以前の天守が今も残る「現存天守」のひとつです。黒い下見板張りの外壁から「烏城（からすじょう）」とも呼ばれます。',meta:[['指定','国宝（1952年）'],['構造','五重六階'],['外壁','黒漆塗りの下見板']]},
   {id:'iriguchi',name:'天守入口',kana:'てんしゅいりぐち',at:[-53,45.5],pos:[-44,45.5],look:[-53,1.6,45.5],text:'天守群の東側、石垣に開いた入口です。中へ進むと石垣の内側の通路から急な階段を上り、大天守の1階から最上階の6階まで見て回れます。',meta:[['入口','天守群の東側'],['内部','1階〜6階']]},
   {id:'inui',name:'乾小天守',kana:'いぬいこてんしゅ',at:[-58,33],pos:[-118,30],look:[-58,13,36],text:'大天守の北に建つ小天守。渡櫓（わたりやぐら）で大天守とつながり、天守群の北の端を固めます。「乾」は北西の方角を表す言葉です。',meta:[['構造','三重四階'],['方角','乾（北西）']]},
   {id:'tsukimi',name:'辰巳附櫓・月見櫓',kana:'たつみつけやぐら・つきみやぐら',at:[-34,64],pos:[4,52],look:[-27,8,64],text:'戦のない時代になってから、寛永年間に松平直政が増築したと伝わる櫓です。月見櫓は三方の戸を外せる開放的なつくりで、朱塗りの回縁（まわりえん）が黒い天守群の中で目を引きます。',meta:[['増築','寛永年間（1630年代）'],['見どころ','朱塗りの回縁']]},
   {id:'uzumi',modernOnly:true,name:'埋の橋',kana:'うずみのはし',at:[-10.4,85],pos:[4,108],look:[-14,3,82],text:'内堀に架かる朱塗りの橋。天守を背にした撮影場所として知られます。このアプリでは橋を渡って本丸へ入れます。',meta:[['場所','内堀の南側']]},
-  {id:'kuromon',edo:{text:'本丸の正門。櫓門の一の門と二の門で枡形をつくり、本丸への入口を固めていました。',meta:[['役割','本丸の正門']]},name:'黒門',kana:'くろもん',at:[69,17],pos:[100,17],look:[69,5,17],text:'本丸の正門で、櫓門（やぐらもん）の一の門と、その外側の二の門で守りを固めていました。現在見られる門は昭和以降に復元されたものです。',meta:[['役割','本丸の正門']]},
-  {id:'taiko',edo:{text:'二の丸の東の正門。そばに太鼓楼があり、太鼓で時刻や合図を知らせたことが名の由来とされます。門の外は外堀で、橋を渡ると三の丸です。',meta:[['場所','二の丸の東'],['外側','外堀・三の丸']]},name:'太鼓門',kana:'たいこもん',at:[160,40],pos:[186,40],look:[160,6,40],text:'二の丸の東側の門。門のそばに太鼓楼があり、時刻や合図を太鼓で知らせたことが名の由来とされます。平成になってから復元されました。',meta:[['場所','二の丸の東']]},
-  {id:'swan',edo:{name:'内堀',kana:'うちぼり',text:'本丸を囲む内堀。その外側に外堀、さらに三の丸を囲む総堀があり、城は三重の堀で守られていました。',meta:[['堀','内堀・外堀・総堀']]},name:'内堀と白鳥',kana:'うちぼり',at:[40,85],pos:[60,106],look:[20,-1,86],text:'天守を囲む内堀には白鳥やカモが暮らしています。風の弱い日には、水面に天守が逆さに映ります。',meta:[['見どころ','水面に映る天守']]},
+  {id:'kuromon',photos:[['Kuro-mon_Gate_of_Matsumoto_Castle.jpg','黒門（現在の様子）']],edo:{text:'本丸の正門。櫓門の一の門と二の門で枡形をつくり、本丸への入口を固めていました。',meta:[['役割','本丸の正門']]},name:'黒門',kana:'くろもん',at:[69,17],pos:[100,17],look:[69,5,17],text:'本丸の正門で、櫓門（やぐらもん）の一の門と、その外側の二の門で守りを固めていました。現在見られる門は昭和以降に復元されたものです。',meta:[['役割','本丸の正門']]},
+  {id:'taiko',photos:[['Taiko-mon_Gate_of_Matsumoto_Castle.jpg','太鼓門（現在の様子）']],edo:{text:'二の丸の東の正門。そばに太鼓楼があり、太鼓で時刻や合図を知らせたことが名の由来とされます。門の外は外堀で、橋を渡ると三の丸です。',meta:[['場所','二の丸の東'],['外側','外堀・三の丸']]},name:'太鼓門',kana:'たいこもん',at:[160,40],pos:[186,40],look:[160,6,40],text:'二の丸の東側の門。門のそばに太鼓楼があり、時刻や合図を太鼓で知らせたことが名の由来とされます。平成になってから復元されました。',meta:[['場所','二の丸の東']]},
+  {id:'swan',photos:[['Aerial_view_of_Matsumoto_Castle.jpg','上空から見た天守群と内堀']],edo:{name:'内堀',kana:'うちぼり',text:'本丸を囲む内堀。その外側に外堀、さらに三の丸を囲む総堀があり、城は三重の堀で守られていました。',meta:[['堀','内堀・外堀・総堀']]},name:'内堀と白鳥',kana:'うちぼり',at:[40,85],pos:[60,106],look:[20,-1,86],text:'天守を囲む内堀には白鳥やカモが暮らしています。風の弱い日には、水面に天守が逆さに映ります。',meta:[['見どころ','水面に映る天守']]},
   {id:'alps',name:'北アルプスの眺め',kana:'きたあるぷす',at:[-60,-20],pos:[-62,-22],look:[-600,40,-60],text:'本丸の西側からは、晴れた日に北アルプスの山並みが見渡せます。秋の終わりには稜線がうっすら白くなります。',meta:[['方角','西']]},
   {id:'chitose',edo:{name:'女鳥羽川の橋',kana:'めとばがわのはし',text:'大手門の南で女鳥羽川を渡り、町人の町へ通じる橋。大手門は明治の初めに取り壊され、その石の一部が現在の千歳橋に使われました。木橋の形はこのアプリでの推定です。',meta:[['現在','千歳橋']]},name:'千歳橋',kana:'ちとせばし',at:[-20,220],pos:[-20,224],look:[-40,10,60],text:'女鳥羽川に架かる橋で、大名町通りの南の端にあたります。橋の北側には縄手通り、南側には中町や本町の街並みが続きます。',meta:[['川','女鳥羽川']]},
-  {id:'nawate',edo:{name:'縄手',kana:'なわて',text:'南の総堀と女鳥羽川に挟まれた細長い土手。縄のように細く長いことが名の由来です。商店が並ぶようになったのは、明治12年に四柱神社ができて参道になってからです。',meta:[['現在','縄手通り'],['商店街','明治以降']]},name:'縄手通り',kana:'なわてどおり',at:[20,203],pos:[0,203],look:[100,2,203],text:'女鳥羽川の北岸に沿って続く小さな商店街。カエルが通りのシンボルで、入口にはカエルの像が立っています。四柱神社の門前町でもあります。',meta:[['シンボル','カエル']]},
-  {id:'yohashira',modernOnly:true,name:'四柱神社',kana:'よはしらじんじゃ',at:[57,175],pos:[57,201],look:[57,4,160],text:'縄手通りに面した神社。四柱の神を祀ることが名の由来で、地元では「神道さん（しんとうさん）」とも呼ばれます。',meta:[['参道','縄手通りから']]},
+  {id:'nawate',photos:[['Nawate_shopping_street_,_縄手通り商店街_-_panoramio.jpg','縄手通り（現在の様子）'],['Nawate_shopping_street_,_縄手通り商店街_-_panoramio_(2).jpg','縄手通りの店並み']],edo:{name:'縄手',kana:'なわて',text:'南の総堀と女鳥羽川に挟まれた細長い土手。縄のように細く長いことが名の由来です。商店が並ぶようになったのは、明治12年に四柱神社ができて参道になってからです。',meta:[['現在','縄手通り'],['商店街','明治以降']]},name:'縄手通り',kana:'なわてどおり',at:[20,203],pos:[0,203],look:[100,2,203],text:'女鳥羽川の北岸に沿って続く小さな商店街。カエルが通りのシンボルで、入口にはカエルの像が立っています。四柱神社の門前町でもあります。',meta:[['シンボル','カエル']]},
+  {id:'yohashira',photos:[['Boys_feeding_pigeons_at_Yohashira-jinja,_Matsumoto,_2016.jpg','四柱神社の境内']],modernOnly:true,name:'四柱神社',kana:'よはしらじんじゃ',at:[57,175],pos:[57,201],look:[57,4,160],text:'縄手通りに面した神社。四柱の神を祀ることが名の由来で、地元では「神道さん（しんとうさん）」とも呼ばれます。',meta:[['参道','縄手通りから']]},
   {id:'buke',edoOnly:true,name:'三の丸の武家屋敷',kana:'さんのまる',at:[-100,163],pos:[-20,145],look:[-110,3,158],text:'外堀と総堀のあいだの三の丸には、上級家臣の屋敷が多く並び、藩の作事所などの施設もありました。塀と門が続く、町人の町とは違う静かな通りです。',meta:[['住む人','上級家臣'],['外側','総堀']]},
   {id:'ninogoten',edoOnly:true,name:'二の丸御殿',kana:'にのまるごてん',at:[138,-45],pos:[110,-40],look:[138,3,-45],text:'本丸の東、二の丸にあった御殿。1727年（享保12年）に本丸御殿が焼けてからは、藩の政治の中心になりました。明治9年（1876年）の火事で焼失しています。二の丸には御金蔵に使われた土蔵もあり、これは今も残っています。',meta:[['焼失','1876年'],['役割','政庁']]},
   {id:'gotenato',edoOnly:true,name:'本丸御殿跡',kana:'ほんまるごてんあと',at:[10,0],pos:[22,0],look:[-10,1,-10],text:'本丸にはかつて藩主の住まいを兼ねた本丸御殿がありましたが、1727年（享保12年）に焼失し、再建されませんでした。この場面は江戸後期を想定しているため、本丸は空き地になっています。',meta:[['焼失','1727年'],['再建','されなかった']]},
   {id:'sotobori',edoOnly:true,name:'外堀',kana:'そとぼり',at:[177,80],pos:[177,42],look:[177,-1,100],text:'本丸と二の丸を囲む外堀。大正から昭和にかけて一部が埋め立てられ、今は道路や市街地になっています。',meta:[['囲む範囲','本丸・二の丸']]},
-  {id:'nakamachi',edo:{name:'中町',kana:'なかまち',text:'善光寺街道沿いに開けた町人の町のひとつ。白壁の蔵が並ぶ今の景色は明治の大火のあとにできたもので、江戸時代は木造の町家が中心でした。',meta:[['街道','善光寺街道'],['建物','木造の町家']]},name:'中町通り',kana:'なかまちどおり',at:[60,260],pos:[-6,260],look:[100,3,260],text:'白壁と黒いなまこ壁の土蔵が並ぶ通り。明治期の大火のあと、火に強い蔵造りの建物が増えたといわれます。',meta:[['見どころ','なまこ壁の蔵']]}
+  {id:'nakamachi',photos:[['Nakamachi_street_Matsumoto_Nagano_pref_Japan01s3.jpg','中町通り（現在の様子）'],['Nakamachi_street_Matsumoto_Nagano_pref_Japan02s3.jpg','中町通りの蔵']],edo:{name:'中町',kana:'なかまち',text:'善光寺街道沿いに開けた町人の町のひとつ。白壁の蔵が並ぶ今の景色は明治の大火のあとにできたもので、江戸時代は木造の町家が中心でした。',meta:[['街道','善光寺街道'],['建物','木造の町家']]},name:'中町通り',kana:'なかまちどおり',at:[60,260],pos:[-6,260],look:[100,3,260],text:'白壁と黒いなまこ壁の土蔵が並ぶ通り。明治期の大火のあと、火に強い蔵造りの建物が増えたといわれます。',meta:[['見どころ','なまこ壁の蔵']]}
 ];
 function areaAt(x,z){ return MODE==='edo'?areaAtEdo(x,z):areaAtModern(x,z); }
 function areaAtEdo(x,z){ if(inR(ISLAND,x,z,0)) return '本丸（御殿跡）';
@@ -896,7 +933,7 @@ function groundH(x,z){ for(const b of actB()) if(inR(b,x,z,.4)) return b.h(x,z);
 function walkable(x,z){ if(x<BOUNDS.x0||x>BOUNDS.x1||z<BOUNDS.z0||z>BOUNDS.z1) return false; if(hitBlock(x,z,.35)) return false;
   for(const b of actB()) if(inR(b,x,z,0)) return true;
   return !waterAt(x,z,.6); }
-const keys={}; addEventListener('keydown',e=>{ if(e.target&&e.target.tagName==='INPUT') return; keys[e.code]=true; if(e.code==='KeyM'&&started) toggleMap(); if(e.code==='Escape'){ closeCard(); closeMap(); } });
+const keys={}; addEventListener('keydown',e=>{ if(e.target&&e.target.tagName==='INPUT') return; keys[e.code]=true; if(e.code==='KeyM'&&started) toggleMap(); if(e.code==='Escape'){ closeCard(); closeMap(); closeSpots(); } if(e.code==='KeyL'&&started) openSpots(); });
 addEventListener('keyup',e=>{ keys[e.code]=false; });
 const joy={id:null,ox:0,oy:0,x:0,y:0}; const looks=new Map();
 const cv=renderer.domElement; cv.style.touchAction='none';
@@ -951,10 +988,30 @@ function buildPins(){ const fr=$('mapFrame'),list=$('spotList'); fr.querySelecto
     const l=document.createElement('button'); l.innerHTML=`<b></b><small></small>`; l.querySelector('b').textContent=s.name; l.querySelector('small').textContent=s.kana; l.onclick=()=>{ teleport(s); closeMap(); openCard(s); }; list.appendChild(l); }); }
 buildPins();
 function toggleMap(){ $('map').hidden?openMap():closeMap(); }
-function openMap(){ closeCard(); $('map').hidden=false; requestAnimationFrame(drawMap); }
+function openMap(){ closeCard(); closeSpots(); $('map').hidden=false; requestAnimationFrame(drawMap); }
 function closeMap(){ $('map').hidden=true; }
-function openCard(s){ $('cKana').textContent=s.kana; $('cName').textContent=s.name; $('cText').textContent=s.text; const dl=$('cMeta'); dl.innerHTML=''; s.meta.forEach(([k,v])=>{ const dt=document.createElement('dt'),dd=document.createElement('dd'); dt.textContent=k; dd.textContent=v; dl.append(dt,dd); }); $('card').hidden=false; $('poi').hidden=true; }
+const PHURL=(f,w)=>'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(f)+'?width='+(w||900);
+const PHPAGE=f=>'https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(f);
+function photoFigure([f,cap]){ const fig=document.createElement('figure'),img=document.createElement('img'),fc=document.createElement('figcaption'),a=document.createElement('a');
+  img.alt=cap; img.loading='lazy'; img.decoding='async'; img.referrerPolicy='no-referrer'; img.src=PHURL(f);
+  img.onerror=()=>{ const d=document.createElement('div'); d.className='ph'; d.textContent='この画面では写真を読み込めませんでした。下の「出典」から写真を開けます。'; img.replaceWith(d); };
+  a.href=PHPAGE(f); a.target='_blank'; a.rel='noopener'; a.textContent='出典（撮影者・ライセンス）'; fc.append(cap+' · '); fc.append(a); fig.append(img,fc); return fig; }
+let cardIdx=-1;
+function openCard(s){ const ph=$('cPhotos'); ph.innerHTML=''; if(s.photos&&s.photos.length){ s.photos.forEach(q=>ph.append(photoFigure(q))); ph.hidden=false; } else ph.hidden=true;
+  cardIdx=curSpots.findIndex(q=>q.id===s.id); $('cNav').hidden=cardIdx<0; $('card').scrollTop=0;
+  $('cKana').textContent=s.kana; $('cName').textContent=s.name; $('cText').textContent=s.text; const dl=$('cMeta'); dl.innerHTML=''; s.meta.forEach(([k,v])=>{ const dt=document.createElement('dt'),dd=document.createElement('dd'); dt.textContent=k; dd.textContent=v; dl.append(dt,dd); }); $('card').hidden=false; $('poi').hidden=true; }
 function closeCard(){ $('card').hidden=true; }
+function stepSpot(d){ if(cardIdx<0) return; const n=curSpots.length,s=curSpots[(cardIdx+d+n)%n]; teleport(s); openCard(s); }
+$('cPrev').onclick=()=>stepSpot(-1); $('cNext').onclick=()=>stepSpot(1);
+function openSpots(){ closeCard(); closeMap(); const g=$('spGrid'); g.innerHTML='';
+  curSpots.forEach(s=>{ const b=document.createElement('button'); b.className='sp-card';
+    let th; if(s.photos&&s.photos.length){ th=document.createElement('img'); th.className='th'; th.loading='lazy'; th.referrerPolicy='no-referrer'; th.alt=''; th.src=PHURL(s.photos[0][0],240); th.onerror=()=>{ const d=document.createElement('div'); d.className='th'; d.textContent='写真なし'; th.replaceWith(d); }; }
+    else { th=document.createElement('div'); th.className='th'; th.textContent=s.edoOnly?'江戸の再現':'写真なし'; }
+    const t=document.createElement('div'); t.style.minWidth='0'; const bb=document.createElement('b'),sm=document.createElement('small'),sp=document.createElement('span'); bb.textContent=s.name; sm.textContent=s.kana; sp.textContent=s.text; t.append(bb,sm,sp);
+    b.append(th,t); b.onclick=()=>{ $('spots').hidden=true; teleport(s); openCard(s); }; g.append(b); });
+  $('spots').hidden=false; $('spots').scrollTop=0; }
+function closeSpots(){ $('spots').hidden=true; }
+$('spotsBtn').onclick=()=>{ if(started) openSpots(); }; $('spotsX').onclick=closeSpots;
 $('cardX').onclick=closeCard; $('mapX').onclick=closeMap; $('mini').onclick=()=>{ if(started) openMap(); };
 $('poi').onclick=()=>{ if(nearSpot) openCard(nearSpot); };
 $('tView').onclick=()=>{ if(!started) return; if(P.mode==='walk'){ if(P.level>=0){ P.level=-1; P.x=-46; P.z=45.5; } P.mode='drone'; $('vView').textContent='空撮'; P.pitch=Math.min(P.pitch,-.25); } else { P.mode='walk'; $('vView').textContent='歩く'; if(!walkable(P.x,P.z)){ const s=curSpots.reduce((a,b)=>Math.hypot(b.pos[0]-P.x,b.pos[1]-P.z)<Math.hypot(a.pos[0]-P.x,a.pos[1]-P.z)?b:a); P.x=s.pos[0]; P.z=s.pos[1]; } P.pitch=Math.max(P.pitch,-.2); } };
@@ -968,7 +1025,7 @@ $('tQual').onclick=()=>{ quality=quality==='high'?'low':'high'; $('vQual').textC
 function updateHUD(){ const a=P.level>=0?FL[P.level].name:areaAt(P.x,P.z); if(a!==lastArea){ lastArea=a; $('area').textContent=a; }
   let best=null,bd=1e9; for(const s of curSpots){ const d=Math.hypot(s.pos[0]-P.x,s.pos[1]-P.z); if(d<bd){ bd=d; best=s; } }
   const ns=P.level>=0?FL[P.level]:(bd<20?best:null); if(ns!==nearSpot){ nearSpot=ns; if(ns){ $('poiName').textContent=ns.name; } }
-  $('poi').hidden=!nearSpot||!$('card').hidden||!$('map').hidden; }
+  $('poi').hidden=!nearSpot||!$('card').hidden||!$('map').hidden||!$('spots').hidden; }
 $('goBtn').onclick=()=>{ if(!ready) return; started=true; $('start').hidden=true; teleport(curSpots[0]);
   showHint(isTouch?'左でなぞって移動 · 右でなぞって見回す':'WASDで移動 · ドラッグで見回す · Shiftで走る'); };
 let hintT=0; function showHint(t){ const h=$('hint'); h.textContent=t; h.hidden=false; h.style.opacity='1'; clearTimeout(hintT); hintT=setTimeout(()=>{ h.style.opacity='0'; hintT=setTimeout(()=>h.hidden=true,700); },5000); }
