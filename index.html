@@ -598,7 +598,8 @@ const daiten=tower(-58,6,60,DT_EXT,1.4);
   dormer(daiten.g,0,f[0].ey+f[0].rise*.28,mid(0,'b'),Math.PI/2,5.2,2.0); dormer(daiten.g,0,f[0].ey+f[0].rise*.28,-mid(0,'b'),-Math.PI/2,5.2,2.0);
   dormer(daiten.g,mid(1,'a'),f[1].ey+f[1].rise*.28,0,0,4.4,1.8); dormer(daiten.g,-mid(1,'a'),f[1].ey+f[1].rise*.28,0,Math.PI,4.4,1.8);
   dormer(daiten.g,0,f[2].ey+f[2].rise*.28,mid(2,'b'),Math.PI/2,3.8,1.6); }
-const INUI_EXT=[{w:11,d:9.5,h:3.8,cut:true,wall:'cwallK'},{w:9,d:7.6,h:3.3,cut:true,wall:'cwallK'},{w:7.2,d:5.8,h:3.2,cut:true,wall:'cwallK'}]; const inui=tower(-58,5.5,33,INUI_EXT,1.3);
+/* 乾小天守は3重4階: 2重目の中に2階と、外から見えない3階（窓のない屋根裏の階）がある */
+const INUI_EXT=[{w:11,d:9.5,h:3.8,cut:true,wall:'cwallK'},{w:9,d:7.6,h:5.3,cut:true,wall:'cwallK'},{w:7.2,d:5.8,h:3.2,cut:true,wall:'cwallK'}]; const inui=tower(-58,5.5,33,INUI_EXT,1.3);
 dormer(inui.g,0,inui.info[0].ey+inui.info[0].rise*.3,-((inui.info[0].b0+inui.info[0].b1)/2+.5),-Math.PI/2,3.8,1.6);
 /* 渡櫓: 壁は keepWindows で窓と戸口のある壁として作る（下の「天守とつながる建物」） */ const WATARI_G=new THREE.Group(); WATARI_G.position.set(-58,5.5,45.5); castle.add(WATARI_G);
 { const r=hipGableRoof(11.5,6,1.2); r.position.set(-58,5.5+3.5,45.5); r.rotation.y=Math.PI/2; castle.add(r); }
@@ -757,7 +758,7 @@ const XST=[];
 /* ================= 天守とつながる建物（渡櫓・乾小天守・辰巳附櫓・月見櫓）=================
    大天守1階から北の渡櫓を通って乾小天守へ、東の辰巳附櫓を通って朱塗りの月見櫓へ歩いて行ける。
    それぞれの床は「大天守1階」と同じ階（P.level=1）の中の区画（zones）として扱い、場所ごとに名前と解説を出す。 */
-{ const WIN={tile:3.6,cols:()=>[[.3,.7]],rows:()=>[.85,2.0],frame:'black',bar:'darkwood',step:.2};
+{ const WIN={tile:3.6,cols:()=>[[.3,.7]],rows:F=>F.dark?null:[.85,2.0],frame:'black',bar:'darkwood',step:.2};
   const annex=(cx,cz,g,ext,y,doors,H)=>{ ext.forEach((L,i)=>{ if(L.Y===undefined) L.Y=g.position.y+ext.slice(0,i).reduce((a,q)=>a+q.h,0); });
     const F={lv:0,y,h:H+.25,wallMat:'inWallK'}; keepWindows({cx,cz,X:{g},ext,FL:[null,F],mat:{wall:'inWallK'},win:Object.assign({},WIN,{doors,innerH:()=>H})});
     const L=ext[0],a=L.w/2-KW_IN,b=L.d/2-KW_IN; slab(B.floor,{x0:cx-a,x1:cx+a,z0:cz-b,z1:cz+b},null,y,.25); slab(B.darkwood,{x0:cx-a,x1:cx+a,z0:cz-b,z1:cz+b},null,y+H,.15);
@@ -783,17 +784,18 @@ const XST=[];
         else { const m2=new THREE.Matrix4().makeRotationX(-Math.sign(run)*ang); m2.setPosition(l,q.y0+q.rise/2-.05,mid); B.darkwood.add(geo,m2); } }
       XST.push({xs:true,ax:q.ax,lat0:q.lat0,lat1:q.lat1,from:q.from,to:q.to,y0:q.y0,rise:q.rise,lo:q.lo,hi:q.hi,x0:q.x0,x1:q.x1,z0:q.z0,z1:q.z1}); } };
   const zr=(ax,l0,l1,f,t)=>ax==='z'?{x0:l0,x1:l1,z0:Math.min(f,t),z1:Math.max(f,t)}:{x0:Math.min(f,t),x1:Math.max(f,t),z0:l0,z1:l1};
-  const IF=[{lv:0,y:6,H:3.3,doors:[{lv:0,side:'s',a0:-1,a1:1,y1:2.3}]},{lv:1,y:9.35,H:3.25},{lv:2,y:12.65,H:3.05}];
-  const IS=[Object.assign({fi:0,ax:'z',lat0:-55.4,lat1:-54.0,from:36.2,to:31.7,y0:6,rise:3.35,lo:1,hi:7},zr('z',-55.4,-54.0,36.2,31.7)),Object.assign({fi:1,ax:'z',lat0:-61.0,lat1:-59.6,from:31.0,to:34.6,y0:9.35,rise:3.3,lo:7,hi:8},zr('z',-61.0,-59.6,31.0,34.6))];
+  const IF=[{lv:0,y:6,H:3.3,doors:[{lv:0,side:'s',a0:-1,a1:1,y1:2.3}]},{lv:1,y:9.35,H:2.65},{lv:1,y:12.3,H:2.25,dark:true},{lv:2,y:14.65,H:3.05}];
+  const IS=[Object.assign({fi:0,ax:'z',lat0:-55.4,lat1:-54.0,from:36.2,to:31.7,y0:6,rise:3.35,lo:1,hi:7},zr('z',-55.4,-54.0,36.2,31.7)),Object.assign({fi:1,ax:'z',lat0:-61.0,lat1:-59.6,from:31.0,to:34.4,y0:9.35,rise:2.95,lo:7,hi:8},zr('z',-61.0,-59.6,31.0,34.4)),Object.assign({fi:2,ax:'z',lat0:-56.6,lat1:-55.2,from:34.9,to:31.9,y0:12.3,rise:2.35,lo:8,hi:10},zr('z',-56.6,-55.2,34.9,31.9))];
   multi(-58,33,inui.g,INUI_EXT,IF,IS);
   const TF=[{lv:0,y:6,H:3.3,doors:[{lv:0,side:'w',a0:-1,a1:1,y1:2.3},{lv:0,side:'e',a0:-.5,a1:1.5,y1:2.3}]},{lv:1,y:9.35,H:3.05}];
   const TS=[Object.assign({fi:0,ax:'x',lat0:60.2,lat1:61.6,from:-38.0,to:-42.6,y0:6,rise:3.35,lo:1,hi:9},zr('x',60.2,61.6,-38.0,-42.6))];
   multi(-41.5,63,tatsumi.g,TATSU_EXT,TF,TS);
   /* 上の階を「階」として追加（大天守の階のあと: 7=乾小天守2階, 8=乾小天守3階, 9=辰巳附櫓2階） */
-  const ADD=(name,kana,text,meta,F)=>FL.push({name,kana,text,meta,y:F.y,h:F.H,annex:true,rects:[F.rect],pillars:[],boxes:[]});
-  ADD('乾小天守 2階','いぬいこてんしゅ にかい','乾小天守の2階。外から見ると2重目にあたります。窓から大天守と渡櫓が見えます。',[['上り階段','西側'],['下り階段','東側']],IF[1]);
-  ADD('乾小天守 3階（最上階）','いぬいこてんしゅ さんがい','乾小天守の最上階。四方の窓から本丸と北の城下を見渡せます。',[['下り階段','西側']],IF[2]);
+  const ADD=(name,kana,text,meta,F)=>FL.push({name,kana,text,meta,y:F.y,h:F.H,annex:true,dark:!!F.dark,rects:[F.rect],pillars:[],boxes:[]});
+  ADD('乾小天守 2階','いぬいこてんしゅ にかい','乾小天守の2階。外から見ると2重目にあたります。窓から大天守と渡櫓が見えます。',[['上り階段','西側'],['下り階段','東側']],IF[1]); /* = 7 */
+  ADD('乾小天守 3階','いぬいこてんしゅ さんがい','外から見ると屋根に隠れて見えない階。窓がなく、天井が低く薄暗い階です。乾小天守は外から見ると3重ですが、中はこの階を含めて4階建て（3重4階）です。',[['下り階段','西側'],['上り階段','東側']],IF[2]);
   ADD('辰巳附櫓 2階','たつみつけやぐら にかい','辰巳附櫓の2階。窓から月見櫓の屋根と内堀が見えます。',[['下り階段','北東']],TF[1]);
+  ADD('乾小天守 4階（最上階）','いぬいこてんしゅ よんかい','乾小天守の最上階。四方の窓から本丸と北の城下を見渡せます。',[['下り階段','東側']],IF[3]); /* = 10 */
   /* 建物と建物のあいだの短い廊下（床・壁・天井） */
   const hall=(x0,x1,z0,z1,y0,y1,ax)=>{ const yt=Math.max(y0,y1)+2.4; if(ax==='z'){ for(const x of [x0-.1,x1+.1]) box(B.darkwood,x-.1,x+.1,Math.min(y0,y1)-.3,yt,z0,z1); }
     else { for(const z of [z0-.1,z1+.1]) box(B.darkwood,x0,x1,Math.min(y0,y1)-.3,yt,z-.1,z+.1); }
@@ -1410,7 +1412,7 @@ applyTime(1);
 let last=performance.now(),clock=0,fr=0; const _tgt=V3();
 function frame(now){ const dt=Math.min(.05,(now-last)/1000); last=now; clock+=dt; fr++;
   if(started) updatePlayer(dt); else attract(dt);
-  { const T=TIMES[timeIdx],tgt=(started&&P.level>=0)?1:0; inBoost+=(tgt-inBoost)*Math.min(1,dt*3); const dark=(P.level===3)?1:0;
+  { const T=TIMES[timeIdx],tgt=(started&&P.level>=0)?1:0; inBoost+=(tgt-inBoost)*Math.min(1,dt*3); const dark=(P.level>=0&&FL[P.level]&&FL[P.level].dark)?1:0;
     hemi.intensity=T.hi*(1+inBoost*1.4); renderer.toneMappingExposure=T.exp*(1+inBoost*(.25+.25*dark));
     inLamp.intensity=inBoost*(.75+.7*dark+(T.night>.5?.5:0)); inLamp.position.set(camera.position.x,camera.position.y+.45,camera.position.z); inFill.intensity=inBoost*.55; }
   for(const s of swans){ const a=clock*s.sp*6.283*.25+s.ph; const x=s.cx+Math.cos(a)*s.rx,z=s.cz+Math.sin(a)*s.rz; const tx=-Math.sin(a)*s.rx,tz=Math.cos(a)*s.rz; s.g.position.set(x,WATER_Y-.05+Math.sin(clock*1.3+s.ph)*.03,z); s.g.rotation.y=Math.atan2(tx,tz); }
