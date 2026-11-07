@@ -765,7 +765,7 @@ const XST=[];
   annex(-58,45.5,WATARI_G,[{w:6,d:11.5,h:3.6,cut:true,wall:'cwallK'}],6,[{lv:0,side:'s',a0:-1,a1:1,y1:2.3},{lv:0,side:'n',a0:-1,a1:1,y1:2.3}],3.1);
   /* 天守以外の建物の階段（任意の階どうしをつなぐ。x向き・z向き） */
   /* 乾小天守・辰巳附櫓は上の階まで: 各階の壁（窓）・床・天井・階段（XST） */
-  const multi=(cx,cz,g,ext,floors,stairs)=>{ ext.forEach((L,i)=>{ if(L.Y===undefined) L.Y=g.position.y+ext.slice(0,i).reduce((a,q)=>a+q.h,0); });
+  const multi=(cx,cz,g,ext,floors,stairs)=>{ floors.forEach(F=>{ if(F.h===undefined) F.h=F.H+.25; }); ext.forEach((L,i)=>{ if(L.Y===undefined) L.Y=g.position.y+ext.slice(0,i).reduce((a,q)=>a+q.h,0); });
     const doors=[].concat(...floors.map(F=>F.doors||[]));
     keepWindows({cx,cz,X:{g},ext,FL:[null,...floors],mat:{wall:'inWallK'},win:Object.assign({},WIN,{doors,innerH:F=>F.H})});
     floors.forEach((F,i)=>{ const L=ext[F.lv],a=L.w/2-KW_IN,b=L.d/2-KW_IN,r={x0:cx-a,x1:cx+a,z0:cz-b,z1:cz+b},up=stairs.find(q=>q.fi===i-1);
