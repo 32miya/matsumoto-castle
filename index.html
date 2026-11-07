@@ -908,8 +908,8 @@ try{ contactShadows(gg,BSETS.modern.list,['town','house'],.45); contactShadows(g
   contactShadows(ge,BSETS.edo.list,['machi','buke','castle'],.42); contactShadows(ge,BSETS.shared.list,['castle'],.35); tGroundE.needsUpdate=true; }catch(e){}
 const MATS={kura:M.kura,namako:M.namako,roof:M.roof,plaster:M.plaster,black:M.black,wood:M.wood,noren:M.noren,facade:M.facade,hroof:M.hroof,lantern:M.lantern,concrete:M.concrete,torii:M.torii,darkwood:M.darkwood,shrineRoof:M.shrineRoof,stone:M.stone,floor:M.floor,inWall:M.inWall,inDark:M.inDark,lampIn:M.lampIn,thatch:M.thatch,shingle:M.shingle,machiya:M.machiya,dote:M.dote,dobei:M.dobei,woodGrain:M.woodGrain};
 MATS.inWallK=M.inWallK;
-/* 板の間の床: シリーズ共通素材（描き下ろしの床板 /oshiro/common/assets/tex/floor_ita.webp）。読み込めないときは手描きのまま */
-{ const im=new Image(); im.onload=()=>{ const t=M.floor.map; t.image=im; t.needsUpdate=true; }; im.src='/oshiro/common/assets/tex/floor_ita.webp'; }
+/* 板の間の床: シリーズ共通素材（黒ずんだ古い床板 /oshiro/common/assets/tex/floor_ita_kuro.webp）。読み込めないときは手描きのまま */
+{ const im=new Image(); im.onload=()=>{ const t=M.floor.map; t.image=im; t.needsUpdate=true; }; im.src='/oshiro/common/assets/tex/floor_ita_kuro.webp'; }
 const NOCAST=['lantern','lampIn','inWall','inDark','floor'];
 for(const [set,par] of [[BS,scene],[BM,GM],[BE,GE]]) for(const k in set) set[k].build(MATS[k],!NOCAST.includes(k),par);
 curSet=BSETS.shared;
