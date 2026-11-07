@@ -598,11 +598,11 @@ const daiten=tower(-58,6,60,DT_EXT,1.4);
   dormer(daiten.g,0,f[0].ey+f[0].rise*.28,mid(0,'b'),Math.PI/2,5.2,2.0); dormer(daiten.g,0,f[0].ey+f[0].rise*.28,-mid(0,'b'),-Math.PI/2,5.2,2.0);
   dormer(daiten.g,mid(1,'a'),f[1].ey+f[1].rise*.28,0,0,4.4,1.8); dormer(daiten.g,-mid(1,'a'),f[1].ey+f[1].rise*.28,0,Math.PI,4.4,1.8);
   dormer(daiten.g,0,f[2].ey+f[2].rise*.28,mid(2,'b'),Math.PI/2,3.8,1.6); }
-const INUI_EXT=[{w:11,d:9.5,h:3.8,cut:true,wall:'cwallK'},{w:9,d:7.6,h:3.3},{w:7.2,d:5.8,h:3.2}]; const inui=tower(-58,5.5,33,INUI_EXT,1.3);
+const INUI_EXT=[{w:11,d:9.5,h:3.8,cut:true,wall:'cwallK'},{w:9,d:7.6,h:3.3,cut:true,wall:'cwallK'},{w:7.2,d:5.8,h:3.2,cut:true,wall:'cwallK'}]; const inui=tower(-58,5.5,33,INUI_EXT,1.3);
 dormer(inui.g,0,inui.info[0].ey+inui.info[0].rise*.3,-((inui.info[0].b0+inui.info[0].b1)/2+.5),-Math.PI/2,3.8,1.6);
 /* 渡櫓: 壁は keepWindows で窓と戸口のある壁として作る（下の「天守とつながる建物」） */ const WATARI_G=new THREE.Group(); WATARI_G.position.set(-58,5.5,45.5); castle.add(WATARI_G);
 { const r=hipGableRoof(11.5,6,1.2); r.position.set(-58,5.5+3.5,45.5); r.rotation.y=Math.PI/2; castle.add(r); }
-const TATSU_EXT=[{w:10,d:9,h:3.8,cut:true,wall:'cwallK'},{w:8,d:7,h:3.2}]; const tatsumi=tower(-41.5,5.5,63,TATSU_EXT,1.3);
+const TATSU_EXT=[{w:10,d:9,h:3.8,cut:true,wall:'cwallK'},{w:8,d:7,h:3.2,cut:true,wall:'cwallK'}]; const tatsumi=tower(-41.5,5.5,63,TATSU_EXT,1.3);
 /* tsukimi yagura */
 { const g=new THREE.Group(); g.position.set(-27.5,4.6,63.5); castle.add(g); const w=9,d=7,h=3.3;
   const fl=mesh(new THREE.BoxGeometry(w+2.6,.4,d+2.6),M.darkwood); fl.position.y=.2; g.add(fl);
@@ -753,6 +753,7 @@ FL.forEach((F,i)=>{ F.pillars=[]; if(i===0) return;
   keepWindows({cx:TCX,cz:TCZ,X:daiten,ext:DT_EXT,FL,mat:{wall:'inWallK'},/* 1階: 北は渡櫓へ、東は辰巳附櫓への戸口 */
 
     win:{tile:3.6,cols:()=>[[.28,.72]],rows:F=>F.dark?null:F.open?[.95,2.15]:[.85,Math.min(2.1,F.h-.5)],frame:'black',bar:'darkwood',step:.2,innerH:F=>F.wallH,doors:[{lv:0,side:'n',a0:-1,a1:1,y1:2.3},{lv:0,side:'e',a0:2,a1:4,y1:2.3}]}}); }
+const XST=[];
 /* ================= 天守とつながる建物（渡櫓・乾小天守・辰巳附櫓・月見櫓）=================
    大天守1階から北の渡櫓を通って乾小天守へ、東の辰巳附櫓を通って朱塗りの月見櫓へ歩いて行ける。
    それぞれの床は「大天守1階」と同じ階（P.level=1）の中の区画（zones）として扱い、場所ごとに名前と解説を出す。 */
@@ -762,8 +763,37 @@ FL.forEach((F,i)=>{ F.pillars=[]; if(i===0) return;
     const L=ext[0],a=L.w/2-KW_IN,b=L.d/2-KW_IN; slab(B.floor,{x0:cx-a,x1:cx+a,z0:cz-b,z1:cz+b},null,y,.25); slab(B.darkwood,{x0:cx-a,x1:cx+a,z0:cz-b,z1:cz+b},null,y+H,.15);
     B.lampIn.add(new THREE.BoxGeometry(.3,.42,.3),TM(cx,y+2.1,cz-b+.25)); };
   annex(-58,45.5,WATARI_G,[{w:6,d:11.5,h:3.6,cut:true,wall:'cwallK'}],6,[{lv:0,side:'s',a0:-1,a1:1,y1:2.3},{lv:0,side:'n',a0:-1,a1:1,y1:2.3}],3.1);
-  annex(-58,33,inui.g,INUI_EXT,6,[{lv:0,side:'s',a0:-1,a1:1,y1:2.3}],3.3);
-  annex(-41.5,63,tatsumi.g,TATSU_EXT,6,[{lv:0,side:'w',a0:-1,a1:1,y1:2.3},{lv:0,side:'e',a0:-.5,a1:1.5,y1:2.3}],3.3);
+  /* 天守以外の建物の階段（任意の階どうしをつなぐ。x向き・z向き） */
+  /* 乾小天守・辰巳附櫓は上の階まで: 各階の壁（窓）・床・天井・階段（XST） */
+  const multi=(cx,cz,g,ext,floors,stairs)=>{ ext.forEach((L,i)=>{ if(L.Y===undefined) L.Y=g.position.y+ext.slice(0,i).reduce((a,q)=>a+q.h,0); });
+    const doors=[].concat(...floors.map(F=>F.doors||[]));
+    keepWindows({cx,cz,X:{g},ext,FL:[null,...floors],mat:{wall:'inWallK'},win:Object.assign({},WIN,{doors,innerH:F=>F.H})});
+    floors.forEach((F,i)=>{ const L=ext[F.lv],a=L.w/2-KW_IN,b=L.d/2-KW_IN,r={x0:cx-a,x1:cx+a,z0:cz-b,z1:cz+b},up=stairs.find(q=>q.fi===i-1);
+      F.rect={x0:r.x0+.3,x1:r.x1-.3,z0:r.z0+.3,z1:r.z1-.3};
+      slab(B.floor,r,up?{x0:up.x0-.05,x1:up.x1+.05,z0:up.z0-.05,z1:up.z1+.05}:null,F.y,i?.3:.25);
+      /* 天井は各階の壁の上端に全面に張る（上の階が小さいので、張らないと外まわりで屋根の内側の瓦が見える）。上り階段の所はあける */
+      const nx=stairs.find(q=>q.fi===i); slab(B.darkwood,r,nx?{x0:nx.x0-.05,x1:nx.x1+.05,z0:nx.z0-.05,z1:nx.z1+.05}:null,F.y+F.H-.05,.15);
+      B.lampIn.add(new THREE.BoxGeometry(.3,.42,.3),TM(cx,F.y+2.1,cz-b+.25)); });
+    for(const q of stairs){ const n=Math.max(6,Math.round(q.rise/.26)),run=q.to-q.from,w=q.lat1-q.lat0,lm=(q.lat0+q.lat1)/2,st=Math.abs(run)/n;
+      for(let k=0;k<n;k++){ const am=q.from+(k+.5)/n*run,yt=q.y0+(k+1)/n*q.rise; if(q.ax==='z'){ B.darkwood.add(new THREE.BoxGeometry(w-.1,.08,st+.05),TM(lm,yt-.04,am)); B.darkwood.add(new THREE.BoxGeometry(w-.14,q.rise/n,.04),TM(lm,yt-q.rise/n/2,am-Math.sign(run)*st/2)); }
+        else { B.darkwood.add(new THREE.BoxGeometry(st+.05,.08,w-.1),TM(am,yt-.04,lm)); B.darkwood.add(new THREE.BoxGeometry(.04,q.rise/n,w-.14),TM(am-Math.sign(run)*st/2,yt-q.rise/n/2,lm)); } }
+      const L2=Math.hypot(run,q.rise),ang=Math.atan2(q.rise,Math.abs(run)),mid=(q.from+q.to)/2;
+      for(const l of [q.lat0+.05,q.lat1-.05]){ const geo=new THREE.BoxGeometry(.08,.3,L2); const m=new THREE.Matrix4(); const e=new THREE.Euler(q.ax==='z'?Math.sign(run)*ang:0,q.ax==='x'?(Math.PI/2):0,0,'YXZ');
+        if(q.ax==='x'){ const g2=new THREE.BoxGeometry(L2,.3,.08); const m2=new THREE.Matrix4().makeRotationZ(Math.sign(run)*ang); m2.setPosition(mid,q.y0+q.rise/2-.05,l); B.darkwood.add(g2,m2); }
+        else { const m2=new THREE.Matrix4().makeRotationX(-Math.sign(run)*ang); m2.setPosition(l,q.y0+q.rise/2-.05,mid); B.darkwood.add(geo,m2); } }
+      XST.push({xs:true,ax:q.ax,lat0:q.lat0,lat1:q.lat1,from:q.from,to:q.to,y0:q.y0,rise:q.rise,lo:q.lo,hi:q.hi,x0:q.x0,x1:q.x1,z0:q.z0,z1:q.z1}); } };
+  const zr=(ax,l0,l1,f,t)=>ax==='z'?{x0:l0,x1:l1,z0:Math.min(f,t),z1:Math.max(f,t)}:{x0:Math.min(f,t),x1:Math.max(f,t),z0:l0,z1:l1};
+  const IF=[{lv:0,y:6,H:3.3,doors:[{lv:0,side:'s',a0:-1,a1:1,y1:2.3}]},{lv:1,y:9.35,H:3.25},{lv:2,y:12.65,H:3.05}];
+  const IS=[Object.assign({fi:0,ax:'z',lat0:-55.4,lat1:-54.0,from:36.2,to:31.7,y0:6,rise:3.35,lo:1,hi:7},zr('z',-55.4,-54.0,36.2,31.7)),Object.assign({fi:1,ax:'z',lat0:-61.0,lat1:-59.6,from:31.0,to:34.6,y0:9.35,rise:3.3,lo:7,hi:8},zr('z',-61.0,-59.6,31.0,34.6))];
+  multi(-58,33,inui.g,INUI_EXT,IF,IS);
+  const TF=[{lv:0,y:6,H:3.3,doors:[{lv:0,side:'w',a0:-1,a1:1,y1:2.3},{lv:0,side:'e',a0:-.5,a1:1.5,y1:2.3}]},{lv:1,y:9.35,H:3.05}];
+  const TS=[Object.assign({fi:0,ax:'x',lat0:60.2,lat1:61.6,from:-38.0,to:-42.6,y0:6,rise:3.35,lo:1,hi:9},zr('x',60.2,61.6,-38.0,-42.6))];
+  multi(-41.5,63,tatsumi.g,TATSU_EXT,TF,TS);
+  /* 上の階を「階」として追加（大天守の階のあと: 7=乾小天守2階, 8=乾小天守3階, 9=辰巳附櫓2階） */
+  const ADD=(name,kana,text,meta,F)=>FL.push({name,kana,text,meta,y:F.y,h:F.H,annex:true,rects:[F.rect],pillars:[],boxes:[]});
+  ADD('乾小天守 2階','いぬいこてんしゅ にかい','乾小天守の2階。外から見ると2重目にあたります。窓から大天守と渡櫓が見えます。',[['上り階段','西側'],['下り階段','東側']],IF[1]);
+  ADD('乾小天守 3階（最上階）','いぬいこてんしゅ さんがい','乾小天守の最上階。四方の窓から本丸と北の城下を見渡せます。',[['下り階段','西側']],IF[2]);
+  ADD('辰巳附櫓 2階','たつみつけやぐら にかい','辰巳附櫓の2階。窓から月見櫓の屋根と内堀が見えます。',[['下り階段','北東']],TF[1]);
   /* 建物と建物のあいだの短い廊下（床・壁・天井） */
   const hall=(x0,x1,z0,z1,y0,y1,ax)=>{ const yt=Math.max(y0,y1)+2.4; if(ax==='z'){ for(const x of [x0-.1,x1+.1]) box(B.darkwood,x-.1,x+.1,Math.min(y0,y1)-.3,yt,z0,z1); }
     else { for(const z of [z0-.1,z1+.1]) box(B.darkwood,x0,x1,Math.min(y0,y1)-.3,yt,z-.1,z+.1); }
@@ -1166,9 +1196,12 @@ const P={x:-44,z:110,y:1.6,yaw:0,pitch:.1,mode:'walk',bob:0,level:-1};
 function lookAtSpot(s){ const dx=s.look[0]-s.pos[0],dz=s.look[2]-s.pos[1],dy=s.look[1]-1.6; P.yaw=Math.atan2(-dx,-dz); P.pitch=Math.max(-.3,Math.min(.35,Math.atan2(dy,Math.hypot(dx,dz)))); }
 function teleport(s){ P.level=-1; P.x=s.pos[0]; P.z=s.pos[1]; P.mode='walk'; $('vView').textContent='歩く'; P.y=groundH(P.x,P.z)+1.6; lookAtSpot(s); }
 function tOf(s,z){ return Math.min(1,Math.max(0,(z-s.from)/(s.to-s.from))); }
-function stairAt(L,x,z){ const up=ST[L]; if(up&&inR(up,x,z,0)) return {s:up,t:tOf(up,z),dir:1,base:L}; const dn=L>0?ST[L-1]:null; if(dn&&inR(dn,x,z,0)) return {s:dn,t:tOf(dn,z),dir:-1,base:L-1}; return null; }
+/* XST: 天守以外の建物の階段（任意の階どうしをつなぐ。x向き・z向き）。宣言は「天守とつながる建物」の所 */
+const xAl=(s,x,z)=>s.ax==='x'?x:z, xLat=(s,x,z)=>s.ax==='x'?z:x, xT=(s,x,z)=>Math.min(1,Math.max(0,(xAl(s,x,z)-s.from)/(s.to-s.from)));
+function stairAt(L,x,z){ const up=FL[L]&&FL[L].annex?null:ST[L]; if(up&&inR(up,x,z,0)) return {s:up,t:tOf(up,z),dir:1,base:L}; const dn=L>0&&!(FL[L]&&FL[L].annex)?ST[L-1]:null; if(dn&&inR(dn,x,z,0)) return {s:dn,t:tOf(dn,z),dir:-1,base:L-1};
+  for(const s of XST){ if(s.lo===L&&inR(s,x,z,0)) return {s,t:xT(s,x,z),dir:1,base:L}; if(s.hi===L&&inR(s,x,z,0)) return {s,t:xT(s,x,z),dir:-1,base:s.lo}; } return null; }
 function zoneAt(L,x,z){ const F=FL[L]; return F&&F.zones?F.zones.find(Z=>Z.rects.some(r=>inR(r,x,z,0))):null; }
-function floorY(L,x,z){ const st=stairAt(L,x,z); if(st) return FL[st.base].y+st.t*st.s.rise; if(FL[L]&&FL[L].zones&&!FL[L].rects.some(r=>inR(r,x,z,0))){ const Z=zoneAt(L,x,z); if(Z){ if(Z.ramp){ const t=Math.max(0,Math.min(1,(x-Z.ramp.a0)/(Z.ramp.a1-Z.ramp.a0))); return Z.ramp.y0+(Z.ramp.y1-Z.ramp.y0)*t; } return Z.y; } } return FL[L].y; }
+function floorY(L,x,z){ const st=stairAt(L,x,z); if(st) return (st.s.xs?st.s.y0:FL[st.base].y)+st.t*st.s.rise; if(FL[L]&&FL[L].zones&&!FL[L].rects.some(r=>inR(r,x,z,0))){ const Z=zoneAt(L,x,z); if(Z){ if(Z.ramp){ const t=Math.max(0,Math.min(1,(x-Z.ramp.a0)/(Z.ramp.a1-Z.ramp.a0))); return Z.ramp.y0+(Z.ramp.y1-Z.ramp.y0)*t; } return Z.y; } } return FL[L].y; }
 function inWalk(L,nx,nz,ox,oz){ const ns=stairAt(L,nx,nz),os=stairAt(L,ox,oz);
   if(ns){ if(nx<ns.s.x0+.35||nx>ns.s.x1-.35) return false; if(!os){ if(ns.dir>0&&ns.t>.2) return false; if(ns.dir<0&&ns.t<.8) return false; } return true; }
   if(os){ if(os.dir>0&&os.t>.2) return false; if(os.dir<0&&os.t<.8) return false; }
@@ -1176,6 +1209,10 @@ function inWalk(L,nx,nz,ox,oz){ const ns=stairAt(L,nx,nz),os=stairAt(L,ox,oz);
 function walkFloor(L,x,z){ const F=FL[L]; if(!F||!(F.rects.some(r=>inR(r,x,z,0))||(F.zones&&F.zones.some(Z=>Z.rects.some(r=>inR(r,x,z,0)))))) return false; if(F.boxes&&F.boxes.some(b=>inR(b,x,z,.22))) return false; for(const p of F.pillars) if(Math.abs(p[0]-x)<.5&&Math.abs(p[1]-z)<.5) return false; return true; }
 /* 階段の端で取り残されないよう、段の外へ出た瞬間に上下の階へ乗り移る */
 function stepIn(L,ox,oz,nx,nz){ const os=stairAt(L,ox,oz),ns=stairAt(L,nx,nz);
+  if((os&&os.s.xs)||(ns&&ns.s.xs)){ const lo=(s,x,z,m)=>xLat(s,x,z)<s.lat0+m||xLat(s,x,z)>s.lat1-m;
+    if(os&&os.s.xs){ const s=os.s; if(ns&&ns.s===s) return lo(s,nx,nz,.3)?-1:L; const tn=(xAl(s,nx,nz)-s.from)/(s.to-s.from); if(lo(s,nx,nz,.15)) return -1;
+      if(tn>=1) return os.dir>0?(walkFloor(s.hi,nx,nz)?s.hi:-1):(walkFloor(L,nx,nz)?L:-1); if(tn<=0) return os.dir>0?(walkFloor(L,nx,nz)?L:-1):(walkFloor(s.lo,nx,nz)?s.lo:-1); return walkFloor(L,nx,nz)?L:-1; }
+    if(lo(ns.s,nx,nz,.3)) return -1; if(ns.dir>0&&ns.t>.25) return -1; if(ns.dir<0&&ns.t<.75) return -1; return L; }
   if(os){ if(ns&&ns.s===os.s) return (nx<os.s.x0+.35||nx>os.s.x1-.35)?-1:L;
     const s=os.s,tn=(nz-s.from)/(s.to-s.from); if(nx<s.x0+.2||nx>s.x1-.2) return -1;
     if(tn>=1) return os.dir>0?(walkFloor(L+1,nx,nz)?L+1:-1):(walkFloor(L,nx,nz)?L:-1);
@@ -1233,7 +1270,7 @@ function updatePlayer(dt){ let ix=0,iz=0; if(keys.KeyW||keys.ArrowUp) iz+=1; if(
   const ty=drone?48:(P.level>=0?floorY(P.level,P.x,P.z):groundH(P.x,P.z))+1.6; P.y+=(ty-P.y)*Math.min(1,dt*(drone?1.6:10));
   let bob=0; if(!drone&&l>.1&&!reduceMotion){ P.bob+=dt*sp*2.1; bob=Math.sin(P.bob)*.035; }
   /* 階段では進む向きに合わせて目線を少し上下させ、行き先（上の階・下の階）が見えるようにする（お城さんぽ共通仕様） */
-  { let tg=0; if(!drone&&!P.room&&P.level>=0&&l>.1){ const st=stairAt(P.level,P.x,P.z); if(st){ const s=st.s,run=s.to-s.from,mv=fz*iz+rz*ix,up=Math.sign(mv)===Math.sign(run); tg=(up?.62:-.5)*Math.atan2(s.rise,Math.abs(run)); } }
+  { let tg=0; if(!drone&&!P.room&&P.level>=0&&l>.1){ const st=stairAt(P.level,P.x,P.z); if(st){ const s=st.s,run=s.to-s.from,mv=s.ax==='x'?fx*iz+rx*ix:fz*iz+rz*ix,up=Math.sign(mv)===Math.sign(run); tg=(up?.62:-.5)*Math.atan2(s.rise,Math.abs(run)); } }
     P.sp=(P.sp||0)+(tg-(P.sp||0))*Math.min(1,dt*(tg?2.6:1.4)); }
   camera.position.set(P.x,P.y+bob,P.z); camera.rotation.set(Math.max(-1.3,Math.min(1.3,P.pitch+P.sp)),P.yaw,0); }
 let orbit=0;
