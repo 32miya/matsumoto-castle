@@ -465,6 +465,20 @@ function frustumGeo(wT,dT,h,bat,tile,cap){ const a=wT/2,b=dT/2,A=a+bat,B=b+bat,v
   quad(v,uv,[-A,0,-B],[-A,0,B],[-a,h,b],[-a,h,-b],2*B/t,sl);
   if(cap) quad(v,uv,[-a,h,b],[a,h,b],[a,h,-b],[-a,h,-b],2*a/t,2*b/t);
   return geoFrom(v,uv); }
+/* 天守台の石垣に穴蔵の入口をあける（お城さんぽ共通仕様）: 斜面の石垣が入口の前をふさがず、奥の通路が見えるようにする。
+   door={z0,z1,y1}（東面、天守台の中心からの z と高さ） */
+function frustumDoorGeo(wT,dT,h,bat,tile,cap,door){ const a=wT/2,b=dT/2,A=a+bat,B=b+bat,v=[],uv=[],t=tile||3,sl=Math.hypot(h,bat)/t;
+  quad(v,uv,[-A,0,B],[A,0,B],[a,h,b],[-a,h,b],2*A/t,sl);
+  quad(v,uv,[A,0,-B],[-A,0,-B],[-a,h,-b],[a,h,-b],2*A/t,sl);
+  quad(v,uv,[-A,0,-B],[-A,0,B],[-a,h,b],[-a,h,-b],2*B/t,sl);
+  if(cap) quad(v,uv,[-a,h,b],[a,h,b],[a,h,-b],[-a,h,-b],2*a/t,2*b/t);
+  /* 東面: 入口の所だけ四角く抜く */
+  const P=(s,w)=>{ const bz=B-2*B*s,tz=b-2*b*s,bx=A,tx=a; return [bx+(tx-bx)*w,h*w,bz+(tz-bz)*w]; };
+  const vv=door.y1/h,Bv=B-(B-b)*vv,s0=(Bv-door.z1)/(2*Bv),s1=(Bv-door.z0)/(2*Bv),S=[0,s0,s1,1],W=[0,vv,1];
+  for(let i=0;i<3;i++) for(let j=0;j<2;j++){ if(i===1&&j===0) continue; const sa=S[i],sb=S[i+1],wa=W[j],wb=W[j+1];
+    v.push(...P(sa,wa),...P(sb,wa),...P(sb,wb),...P(sa,wa),...P(sb,wb),...P(sa,wb)); const U=s=>s*2*B/t,V=w=>w*sl;
+    uv.push(U(sa),V(wa),U(sb),V(wa),U(sb),V(wb),U(sa),V(wa),U(sb),V(wb),U(sa),V(wb)); }
+  return geoFrom(v,uv); }
 function gableRoofGeo(L,D,H,oh,ohx){ const hx=L/2+ohx,hz=D/2+oh,yE=-oh*H/(D/2),sl=Math.hypot(hz,H-yE),v=[],uv=[];
   quad(v,uv,[-hx,yE,hz],[hx,yE,hz],[hx,H,0],[-hx,H,0],2*hx/2.2,sl/1.1);
   quad(v,uv,[hx,yE,-hz],[-hx,yE,-hz],[-hx,H,0],[hx,H,0],2*hx/2.2,sl/1.1);
@@ -565,9 +579,9 @@ function tower(cx,y0,cz,levels,oh,ry){ const g=new THREE.Group(); g.position.set
     else { const r=hipGableRoof(L.w,L.d,oh+.2); r.position.y=ey; g.add(r); }
     y+=L.h; });
   return {g,info}; }
-function base(cx,cz,w,d,top,bat,cap){ const m=mesh(frustumGeo(w,d,top+3.5,bat,5,cap!==false),M.stone); m.position.set(cx,-3.5,cz); castle.add(m); }
+function base(cx,cz,w,d,top,bat,cap,door){ const m=mesh(door?frustumDoorGeo(w,d,top+3.5,bat,5,cap!==false,door):frustumGeo(w,d,top+3.5,bat,5,cap!==false),M.stone); m.position.set(cx,-3.5,cz); castle.add(m); }
 
-base(-58,60,18,18,6,2.0,false); base(-58,33,14,12,5.5,1.6); base(-58,45.5,8,10,5.5,1.2); base(-41.5,63,13,12,5.5,1.6); base(-27.5,63.5,13,11,4.6,1.4);
+base(-58,60,18,18,6,2.0,false); base(-58,33,14,12,5.5,1.6); base(-58,45.5,8,10,5.5,1.2,true,{z0:44.55-45.5,z1:46.45-45.5,y1:2.75+3.5}); /* 天守入口の通路の口を石垣にあける */ base(-41.5,63,13,12,5.5,1.6); base(-27.5,63.5,13,11,4.6,1.4);
 block(-68.5,49.5,-47.5,70.5,'castle'); block(-66.5,26.5,-49.5,41.5,'castle'); block(-63.5,40,-52.5,51,'castle'); block(-49.5,55.5,-33.5,70.5,'castle'); block(-35.5,56.5,-19.6,70.5,'castle');
 
 /* 大天守の外壁は窓を本当の開口にするので、窓を描かない壁（cwallK）で作り直す（keepWindows） */
@@ -696,9 +710,20 @@ function slab(bt,fp,hole,y,th){ const P=hole?[{x0:fp.x0,x1:fp.x1,z0:fp.z0,z1:hol
   for(const r of P){ const w=r.x1-r.x0,d=r.z1-r.z0; if(w<.01||d<.01) continue; bt.add(boxUVGeo(w,th,d,2.4,2.4),TM((r.x0+r.x1)/2,y-th/2,(r.z0+r.z1)/2)); } }
 function inWallGeo(L,h){ const g=new THREE.BoxGeometry(L,h,.14),u=g.attributes.uv,b=Math.max(1,Math.round(L/3.6)); for(let f=0;f<6;f++) for(let k=0;k<4;k++){ const i=f*4+k; if(f>=4) u.setX(i,u.getX(i)*b); else u.setXY(i,.02,.1); } return g; }
 function box(bt,x0,x1,y0,y1,z0,z1){ bt.add(boxUVGeo(x1-x0,y1-y0,z1-z0,3,3),TM((x0+x1)/2,(y0+y1)/2,(z0+z1)/2)); }
+/* 階段の吹き抜け（お城さんぽ共通仕様）: 床と天井の穴を階段より左右に広くあけ、上の階には手すりを回す。
+   下から見上げたとき上の階の床・柱・窓が見え、行き先が塞がって見えないようにする */
+const WELL=.6,WELL_B=.6;
+function wellR(s){ if(!s) return null; const d=Math.sign(s.to-s.from),r={x0:s.x0-WELL,x1:s.x1+WELL,z0:s.z0,z1:s.z1}; if(d>0) r.z0-=WELL_B; else r.z1+=WELL_B; return r; }
+function stairWell(F,s,mat){ const y=F.y,d=Math.sign(s.to-s.from),w=wellR(s),zb=s.from-d*WELL_B,zm=(w.z0+w.z1)/2,L=w.z1-w.z0,xa=w.x0,xb=w.x1;
+  coll(F,xa-.05,s.x0,w.z0,w.z1); coll(F,s.x1,xb+.05,w.z0,w.z1); coll(F,xa-.05,xb+.05,Math.min(zb,s.from)-.12,Math.max(zb,s.from)+.0);
+  for(const x of [xa,xb]){ B[mat].add(new THREE.BoxGeometry(.1,.1,L),TM(x,y+.9,zm)); B[mat].add(new THREE.BoxGeometry(.08,.08,L),TM(x,y+.45,zm)); for(const z of [w.z0,zm,w.z1]) B[mat].add(new THREE.BoxGeometry(.12,.95,.12),TM(x,y+.47,z)); }
+  B[mat].add(new THREE.BoxGeometry(xb-xa,.1,.1),TM((xa+xb)/2,y+.9,zb)); B[mat].add(new THREE.BoxGeometry(xb-xa,.08,.08),TM((xa+xb)/2,y+.45,zb));
+  /* 穴の縁の框（床の厚みを見せて、穴だと分かるように） */
+  for(const x of [xa,xb]) B.darkwood.add(new THREE.BoxGeometry(.08,.34,L),TM(x,y-.17,zm)); B.darkwood.add(new THREE.BoxGeometry(xb-xa,.34,.08),TM((xa+xb)/2,y-.17,zb)); }
+function coll(F,x0,x1,z0,z1){ (F.boxes=F.boxes||[]).push({x0:Math.min(x0,x1),x1:Math.max(x0,x1),z0:Math.min(z0,z1),z1:Math.max(z0,z1)}); }
 FL.forEach((F,i)=>{ F.pillars=[]; if(i===0) return;
   const fp={x0:TCX-F.w/2,x1:TCX+F.w/2,z0:TCZ-F.d/2,z1:TCZ+F.d/2}; F.rects=[{x0:fp.x0+.9,x1:fp.x1-.9,z0:fp.z0+.9,z1:fp.z1-.9}];
-  slab(B.floor,fp,clipR(fp,ST[i-1]),F.y,.25);
+  slab(B.floor,fp,clipR(fp,i>1?wellR(ST[i-1]):ST[i-1]),F.y,.25); if(i>1) stairWell(F,ST[i-1],'darkwood');
   if(i===FL.length-1) slab(B.darkwood,fp,null,F.y+F.h+.25,.25);
   let ext=0; if(F.roof!==undefined){ const r=daiten.info[F.roof],aw=F.w/2-.3,bw=F.d/2-.3,t=Math.max(0,Math.min((r.a0-aw)/(r.a0-r.a1),(r.b0-bw)/(r.b0-r.b1))); ext=Math.max(0,TY+r.ey+r.rise*Math.pow(t,1.6)-(F.y+F.h)-.05); }
   const H=F.h+ext,a=F.w/2-.3,b=F.d/2-.3, sides=[[2*a,TCX,TCZ-b,0],[2*a,TCX,TCZ+b,0],[2*b,TCX-a,TCZ,Math.PI/2],[2*b,TCX+a,TCZ,Math.PI/2]];
@@ -729,7 +754,7 @@ ST.forEach((s,i)=>{ const y0=FL[i].y,n=Math.max(6,Math.round(s.rise/.26)),run=s.
   box(B.stone,-58.1,-52.3,0,.06,44.4,46.6); box(B.stone,-58.1,-55.7,0,.06,46.6,53.0);
   B.lampIn.add(new THREE.BoxGeometry(.3,.4,.2),TM(-54,2.0,44.65)); B.lampIn.add(new THREE.BoxGeometry(.2,.4,.3),TM(-57.95,2.0,50));
   for(const r of [{x0:-67,x1:-49,z0:51,z1:52.5},{x0:-67,x1:-49,z0:67.5,z1:69},{x0:-67,x1:-66,z0:52.5,z1:67.5},{x0:-50,x1:-49,z0:52.5,z1:67.5}]) box(B.stone,r.x0,r.x1,5.7,6,r.z0,r.z1);
-  B.black.add(new THREE.PlaneGeometry(1.9,2.55),TM(-52.95,1.27,45.5,Math.PI/2));
+  /* 入口は黒い板でふさがず、奥の通路が見えるようにする（お城さんぽ共通仕様） */
   for(const z of [44.3,46.7]) B.darkwood.add(new THREE.BoxGeometry(.26,2.85,.26),TM(-52.4,1.42,z));
   B.darkwood.add(new THREE.BoxGeometry(.3,.32,2.8),TM(-52.4,2.75,45.5)); B.roof.add(gableRoofGeo(3.1,1.5,.6,.25,.15),TM(-52.55,2.9,45.5,Math.PI/2));
   const sg=new THREE.Mesh(new THREE.PlaneGeometry(.34,1.36),M.sign); sg.position.set(-52.1,1.55,47.2); sg.rotation.y=Math.PI/2; castle.add(sg); }
@@ -1103,7 +1128,7 @@ function inWalk(L,nx,nz,ox,oz){ const ns=stairAt(L,nx,nz),os=stairAt(L,ox,oz);
   if(ns){ if(nx<ns.s.x0+.35||nx>ns.s.x1-.35) return false; if(!os){ if(ns.dir>0&&ns.t>.2) return false; if(ns.dir<0&&ns.t<.8) return false; } return true; }
   if(os){ if(os.dir>0&&os.t>.2) return false; if(os.dir<0&&os.t<.8) return false; }
   const F=FL[L]; if(!F.rects.some(r=>inR(r,nx,nz,0))) return false; for(const p of F.pillars) if(Math.abs(p[0]-nx)<.5&&Math.abs(p[1]-nz)<.5) return false; return true; }
-function walkFloor(L,x,z){ const F=FL[L]; if(!F||!F.rects.some(r=>inR(r,x,z,0))) return false; for(const p of F.pillars) if(Math.abs(p[0]-x)<.5&&Math.abs(p[1]-z)<.5) return false; return true; }
+function walkFloor(L,x,z){ const F=FL[L]; if(!F||!F.rects.some(r=>inR(r,x,z,0))) return false; if(F.boxes&&F.boxes.some(b=>inR(b,x,z,.22))) return false; for(const p of F.pillars) if(Math.abs(p[0]-x)<.5&&Math.abs(p[1]-z)<.5) return false; return true; }
 /* 階段の端で取り残されないよう、段の外へ出た瞬間に上下の階へ乗り移る */
 function stepIn(L,ox,oz,nx,nz){ const os=stairAt(L,ox,oz),ns=stairAt(L,nx,nz);
   if(os){ if(ns&&ns.s===os.s) return (nx<os.s.x0+.35||nx>os.s.x1-.35)?-1:L;
@@ -1162,7 +1187,10 @@ function updatePlayer(dt){ let ix=0,iz=0; if(keys.KeyW||keys.ArrowUp) iz+=1; if(
   const nn=P.level>=0?.08:.25; if(camera.near!==nn){ camera.near=nn; camera.updateProjectionMatrix(); }
   const ty=drone?48:(P.level>=0?floorY(P.level,P.x,P.z):groundH(P.x,P.z))+1.6; P.y+=(ty-P.y)*Math.min(1,dt*(drone?1.6:10));
   let bob=0; if(!drone&&l>.1&&!reduceMotion){ P.bob+=dt*sp*2.1; bob=Math.sin(P.bob)*.035; }
-  camera.position.set(P.x,P.y+bob,P.z); camera.rotation.set(P.pitch,P.yaw,0); }
+  /* 階段では進む向きに合わせて目線を少し上下させ、行き先（上の階・下の階）が見えるようにする（お城さんぽ共通仕様） */
+  { let tg=0; if(!drone&&!P.room&&P.level>=0&&l>.1){ const st=stairAt(P.level,P.x,P.z); if(st){ const s=st.s,run=s.to-s.from,mv=fz*iz+rz*ix,up=Math.sign(mv)===Math.sign(run); tg=(up?.62:-.5)*Math.atan2(s.rise,Math.abs(run)); } }
+    P.sp=(P.sp||0)+(tg-(P.sp||0))*Math.min(1,dt*(tg?2.6:1.4)); }
+  camera.position.set(P.x,P.y+bob,P.z); camera.rotation.set(Math.max(-1.3,Math.min(1.3,P.pitch+P.sp)),P.yaw,0); }
 let orbit=0;
 function attract(dt){ orbit+=dt*(reduceMotion?.02:.05); const cx=-48,cz=58; camera.position.set(cx+Math.sin(orbit+.35)*125,30,cz+Math.cos(orbit+.35)*125); camera.lookAt(cx,15,cz); }
 
