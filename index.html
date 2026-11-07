@@ -590,6 +590,8 @@ block(-68.5,49.5,-47.5,70.5,'castle'); block(-66.5,26.5,-49.5,41.5,'castle'); bl
 { const c=makeCanvas(256,512),g=c.getContext('2d'); g.drawImage(cIn,0,0); for(const x of [62,115,168]) g.drawImage(cIn,9,14,53,228,x,14,53,228);
   g.drawImage(cIn,0,300,256,30,0,256,256,30); g.fillStyle='#1d1610'; g.fillRect(0,242,256,12); g.fillRect(0,0,9,512); g.fillRect(247,0,9,512);
   const m=M.inWall.clone(); m.map=toTex(c); m.emissiveMap=null; m.emissive=new THREE.Color(0); m.emissiveIntensity=0; M.inWallK=m; BKEYS.push('inWallK'); for(const S of [BS]) S.inWallK=new Batch(); }
+/* 石垣の中の通路の石は暗めにして、奥行きが分かるようにする（外の石垣と同じ明るさだと平らな壁に見える） */
+{ const m=M.stone.clone(); m.color=new THREE.Color(0x6e675c); M.stoneIn=m; BKEYS.push('stoneIn'); BS.stoneIn=new Batch(); }
 const DT_EXT=[{w:16,d:15,h:4.4},{w:14,d:13,h:3.8,slope:.9},{w:11.6,d:10.6,h:5.8},{w:9.6,d:8.6,h:3.4},{w:7.8,d:6.8,h:3.4}].map(L=>Object.assign(L,{cut:true,wall:'cwallK'}));
 const daiten=tower(-58,6,60,DT_EXT,1.4);
 { const f=daiten.info; const mid=(i,k)=>(f[i][k+'0']+f[i][k+'1'])/2+.55;
@@ -689,7 +691,7 @@ function keepWindows(T){ const X=T.X,W=T.win,cx=T.cx,cz=T.cz,yB=X.g.position.y;
 const KWIN=true;
 const TCX=-58,TCZ=60,TY=6;
 const FL=[
-  {name:'天守入口',kana:'てんしゅいりぐち',y:0,h:2.75,rects:[{x0:-57.55,x1:-52.3,z0:44.95,z1:46.05},{x0:-57.55,x1:-56.25,z0:44.95,z1:53.4}],
+  {name:'天守入口',kana:'てんしゅいりぐち',y:0,h:2.75,rects:[{x0:-57.55,x1:-52.3,z0:44.95,z1:46.05},{x0:-57.55,x1:-56.25,z0:44.95,z1:53.4},{x0:-57.55,x1:-54.75,z0:44.95,z1:47.75}],
    text:'石垣の内側をくぐる通路。奥の階段を上ると大天守の1階に出ます。松本城の階段はどれも急で、最も急なところは約60度あるといわれます。',meta:[['この先','大天守 1階'],['足もと','階段は急です']]},
   {name:'大天守 1階',kana:'だいてんしゅ いっかい',y:6,h:4.4,w:16,d:15,roof:0,text:'太い柱が立ち並ぶ広い階。外壁に沿って「武者走り（むしゃばしり）」と呼ばれる通路が巡り、戦のときは兵が素早く動けるようになっていました。',meta:[['上り階段','東側'],['見どころ','柱と武者走り']]},
   {name:'大天守 2階',kana:'にかい',y:10.4,h:3.8,w:14,d:13,roof:1,text:'1階と同じく武者走りのある階。現在の松本城では、火縄銃や武具の展示に使われています。',meta:[['上り階段','西側'],['展示','火縄銃・武具']]},
@@ -713,8 +715,12 @@ function box(bt,x0,x1,y0,y1,z0,z1){ bt.add(boxUVGeo(x1-x0,y1-y0,z1-z0,3,3),TM((x
 /* 階段の吹き抜け（お城さんぽ共通仕様）: 床と天井の穴を階段より左右に広くあけ、上の階には手すりを回す。
    下から見上げたとき上の階の床・柱・窓が見え、行き先が塞がって見えないようにする */
 const WELL=.6,WELL_B=.6;
-function wellR(s){ if(!s) return null; const d=Math.sign(s.to-s.from),r={x0:s.x0-WELL,x1:s.x1+WELL,z0:s.z0,z1:s.z1}; if(d>0) r.z0-=WELL_B; else r.z1+=WELL_B; return r; }
-function stairWell(F,s,mat){ const y=F.y,d=Math.sign(s.to-s.from),w=wellR(s),zb=s.from-d*WELL_B,zm=(w.z0+w.z1)/2,L=w.z1-w.z0,xa=w.x0,xb=w.x1;
+/* F（上の階）を渡すと、穴がその階の壁より外に出ないように収める（外に出ると下の屋根の瓦が見えてしまう） */
+function wellR(s,F){ if(!s) return null; const d=Math.sign(s.to-s.from),r={x0:s.x0-WELL,x1:s.x1+WELL,z0:s.z0,z1:s.z1}; if(d>0) r.z0-=WELL_B; else r.z1+=WELL_B;
+  if(F&&F.rects&&F.rects.length){ let a=1e9,b=-1e9,c=1e9,e=-1e9; for(const q of F.rects){ a=Math.min(a,q.x0); b=Math.max(b,q.x1); c=Math.min(c,q.z0); e=Math.max(e,q.z1); }
+    r.x0=Math.min(s.x0,Math.max(r.x0,a+.15)); r.x1=Math.max(s.x1,Math.min(r.x1,b-.15)); r.z0=Math.min(s.z0,Math.max(r.z0,c+.15)); r.z1=Math.max(s.z1,Math.min(r.z1,e-.15)); }
+  return r; }
+function stairWell(F,s,mat){ const y=F.y,d=Math.sign(s.to-s.from),w=wellR(s,F),zb=s.from-d*WELL_B,zm=(w.z0+w.z1)/2,L=w.z1-w.z0,xa=w.x0,xb=w.x1;
   coll(F,xa-.05,s.x0,w.z0,w.z1); coll(F,s.x1,xb+.05,w.z0,w.z1); coll(F,xa-.05,xb+.05,Math.min(zb,s.from)-.12,Math.max(zb,s.from)+.0);
   for(const x of [xa,xb]){ B[mat].add(new THREE.BoxGeometry(.1,.1,L),TM(x,y+.9,zm)); B[mat].add(new THREE.BoxGeometry(.08,.08,L),TM(x,y+.45,zm)); for(const z of [w.z0,zm,w.z1]) B[mat].add(new THREE.BoxGeometry(.12,.95,.12),TM(x,y+.47,z)); }
   B[mat].add(new THREE.BoxGeometry(xb-xa,.1,.1),TM((xa+xb)/2,y+.9,zb)); B[mat].add(new THREE.BoxGeometry(xb-xa,.08,.08),TM((xa+xb)/2,y+.45,zb));
@@ -723,7 +729,7 @@ function stairWell(F,s,mat){ const y=F.y,d=Math.sign(s.to-s.from),w=wellR(s),zb=
 function coll(F,x0,x1,z0,z1){ (F.boxes=F.boxes||[]).push({x0:Math.min(x0,x1),x1:Math.max(x0,x1),z0:Math.min(z0,z1),z1:Math.max(z0,z1)}); }
 FL.forEach((F,i)=>{ F.pillars=[]; if(i===0) return;
   const fp={x0:TCX-F.w/2,x1:TCX+F.w/2,z0:TCZ-F.d/2,z1:TCZ+F.d/2}; F.rects=[{x0:fp.x0+.9,x1:fp.x1-.9,z0:fp.z0+.9,z1:fp.z1-.9}];
-  slab(B.floor,fp,clipR(fp,i>1?wellR(ST[i-1]):ST[i-1]),F.y,.25); if(i>1) stairWell(F,ST[i-1],'darkwood');
+  slab(B.floor,fp,clipR(fp,i>1?wellR(ST[i-1],F):ST[i-1]),F.y,.25); if(i>1) stairWell(F,ST[i-1],'darkwood');
   if(i===FL.length-1) slab(B.darkwood,fp,null,F.y+F.h+.25,.25);
   let ext=0; if(F.roof!==undefined){ const r=daiten.info[F.roof],aw=F.w/2-.3,bw=F.d/2-.3,t=Math.max(0,Math.min((r.a0-aw)/(r.a0-r.a1),(r.b0-bw)/(r.b0-r.b1))); ext=Math.max(0,TY+r.ey+r.rise*Math.pow(t,1.6)-(F.y+F.h)-.05); }
   const H=F.h+ext,a=F.w/2-.3,b=F.d/2-.3, sides=[[2*a,TCX,TCZ-b,0],[2*a,TCX,TCZ+b,0],[2*b,TCX-a,TCZ,Math.PI/2],[2*b,TCX+a,TCZ,Math.PI/2]];
@@ -747,12 +753,18 @@ ST.forEach((s,i)=>{ const y0=FL[i].y,n=Math.max(6,Math.round(s.rise/.26)),run=s.
   const L=Math.hypot(run,s.rise),ang=-Math.atan2(s.rise,run),mz=(s.from+s.to)/2;
   for(const x of [s.x0+.06,s.x1-.06]){ B.darkwood.add(new THREE.BoxGeometry(.1,.32,L),TM(x,y0+s.rise/2-.1,mz,0,1,1,1,ang)); B.darkwood.add(new THREE.BoxGeometry(.06,.06,L),TM(x,y0+s.rise/2+.85,mz,0,1,1,1,ang)); } });
 /* entrance passage inside the stone base */
-{ box(B.stone,-58.1,-52.3,0,2.75,44.25,44.55); box(B.stone,-55.7,-52.3,0,2.75,46.45,46.75);
-  box(B.stone,-58.4,-58.1,0,6,44.25,62.4); box(B.stone,-55.7,-55.4,0,6,46.45,62.4); box(B.stone,-58.1,-55.7,0,6,62.1,62.4);
+/* 曲がり角は右側を広く切り欠き、入口から奥（右に曲がった先の階段へ続く通路と灯り）が見えるようにする */
+{ box(B.stoneIn,-58.1,-52.3,0,2.75,44.25,44.55); box(B.stoneIn,-54.3,-52.3,0,2.75,46.45,46.75);
+  box(B.stoneIn,-58.4,-58.1,0,6,44.25,62.4); box(B.stone,-55.7,-55.4,0,6,48.2,62.4);
+  box(B.stone,-54.3,-54.0,0,2.75,46.45,48.5); box(B.stone,-55.7,-54.0,0,2.75,48.2,48.5); box(B.darkwood,-55.7,-54.1,2.75,2.95,46.6,48.3); box(B.stoneIn,-55.7,-54.3,0,.06,46.6,48.2);
+  B.lampIn.add(new THREE.BoxGeometry(.3,.4,.2),TM(-55.0,2.0,48.1)); B.lampIn.add(new THREE.BoxGeometry(.2,.4,.3),TM(-57.95,2.0,52.3)); box(B.stone,-58.1,-55.7,0,6,62.1,62.4);
   box(B.stone,-58.1,-55.7,2.75,6,52.85,53.0);
   box(B.darkwood,-58.1,-52.3,2.75,2.95,44.4,46.6); box(B.darkwood,-58.1,-55.7,2.75,2.95,46.6,53.0);
-  box(B.stone,-58.1,-52.3,0,.06,44.4,46.6); box(B.stone,-58.1,-55.7,0,.06,46.6,53.0);
+  box(B.stoneIn,-58.1,-52.3,0,.06,44.4,46.6); box(B.stoneIn,-58.1,-55.7,0,.06,46.6,53.0);
   B.lampIn.add(new THREE.BoxGeometry(.3,.4,.2),TM(-54,2.0,44.65)); B.lampIn.add(new THREE.BoxGeometry(.2,.4,.3),TM(-57.95,2.0,50));
+  /* 突き当たりの壁に「← 大天守へ」の札（入口から見て左へ曲がる） */
+  { const c=makeCanvas(256,96),g=c.getContext('2d'); g.fillStyle='#3a2a1c'; g.fillRect(0,0,256,96); g.strokeStyle='#c9a45a'; g.lineWidth=4; g.strokeRect(5,5,246,86); g.fillStyle='#f3ead8'; g.font='bold 46px "Shippori Mincho",serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText('← 大天守へ',128,50);
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(1.1,.41),new THREE.MeshBasicMaterial({map:toTex(c)})); m.position.set(-58.05,1.85,45.5); m.rotation.y=Math.PI/2; castle.add(m); }
   for(const r of [{x0:-67,x1:-49,z0:51,z1:52.5},{x0:-67,x1:-49,z0:67.5,z1:69},{x0:-67,x1:-66,z0:52.5,z1:67.5},{x0:-50,x1:-49,z0:52.5,z1:67.5}]) box(B.stone,r.x0,r.x1,5.7,6,r.z0,r.z1);
   /* 入口は黒い板でふさがず、奥の通路が見えるようにする（お城さんぽ共通仕様） */
   for(const z of [44.3,46.7]) B.darkwood.add(new THREE.BoxGeometry(.26,2.85,.26),TM(-52.4,1.42,z));
@@ -933,6 +945,7 @@ try{ contactShadows(gg,BSETS.modern.list,['town','house'],.45); contactShadows(g
   contactShadows(ge,BSETS.edo.list,['machi','buke','castle'],.42); contactShadows(ge,BSETS.shared.list,['castle'],.35); tGroundE.needsUpdate=true; }catch(e){}
 const MATS={kura:M.kura,namako:M.namako,roof:M.roof,plaster:M.plaster,black:M.black,wood:M.wood,noren:M.noren,facade:M.facade,hroof:M.hroof,lantern:M.lantern,concrete:M.concrete,torii:M.torii,darkwood:M.darkwood,shrineRoof:M.shrineRoof,stone:M.stone,floor:M.floor,inWall:M.inWall,inDark:M.inDark,lampIn:M.lampIn,thatch:M.thatch,shingle:M.shingle,machiya:M.machiya,dote:M.dote,dobei:M.dobei,woodGrain:M.woodGrain};
 MATS.inWallK=M.inWallK;
+MATS.stoneIn=M.stoneIn;
 /* 板の間の床: シリーズ共通素材（黒ずんだ古い床板 /oshiro/common/assets/tex/floor_ita_kuro.webp）。読み込めないときは手描きのまま */
 { const im=new Image(); im.onload=()=>{ const t=M.floor.map; t.image=im; t.needsUpdate=true; }; im.src='/oshiro/common/assets/tex/floor_ita_kuro.webp'; }
 const NOCAST=['lantern','lampIn','inWall','inDark','floor'];
