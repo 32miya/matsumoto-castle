@@ -209,6 +209,7 @@ body.touchui #poi{bottom:calc(env(safe-area-inset-bottom,0px) + 234px);max-width
 <div id="err" hidden>この端末では3D表示を開始できませんでした。<br>WebGLに対応したブラウザで開いてください。</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="/oshiro/common/edo_deco.js"></script>
 <script>
 (function(){
 "use strict";
@@ -980,8 +981,10 @@ const mcBills=[];
 function mcBill(n,x,y0,z,h,opt){ const mat=new THREE.MeshBasicMaterial({map:mcLoad(n),alphaTest:.5,toneMapped:false,side:THREE.DoubleSide}); const geo=new THREE.PlaneGeometry(1,1); geo.translate(0,.5,0);
   const m=new THREE.Mesh(geo,mat); m.position.set(x,y0,z); m.scale.set(h*.6,h,1); mcLoad(n,a=>m.scale.set(h*a,h,1)); GE.add(m); mcBills.push({m,glow:!!(opt&&opt.glow)});
   const sh=new THREE.Mesh(new THREE.CircleGeometry(.5,18).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:0,transparent:true,opacity:.28,depthWrite:false})); sh.position.set(x,y0+.015,z); sh.scale.setScalar(Math.max(.5,h*.5)); GE.add(sh); return m; }
-function updateMcBills(){ if(!GE.visible) return; const T=TIMES[timeIdx]; const d=T.night>.5?.42:T.night>.1?.8:1;
+function updateMcBills(){ if(!GE.visible) return; const T=TIMES[timeIdx]; const d=T.night>.5?.42:T.night>.1?.8:1; if(EDO) EDO.tint(d);
   for(const b of mcBills){ b.m.rotation.y=Math.atan2(camera.position.x-b.m.position.x,camera.position.z-b.m.position.z); const v=b.glow?Math.max(d,T.night>.5?1.1:1):d; b.m.material.color.setRGB(v,v*(b.glow?.96:1),v*(b.glow?.9:1)); } }
+/* お城さんぽ共通の江戸の調度品・具足・欄間（/oshiro/common/edo_deco.js と deco_edo.webp）。読み込めないときは何も置かない */
+const EDO=window.EdoDeco?EdoDeco.init(THREE):null;
 /* 畳と格天井の手描きテクスチャ（3.6m角） */
 const cTatami=makeCanvas(512,512);{ const g=cTatami.getContext('2d'),u=512/3.6; g.fillStyle='#b8b276'; g.fillRect(0,0,512,512);
   const mat=(x,y,w,h,vert)=>{ g.fillStyle=`rgb(${176+rnd()*14|0},${170+rnd()*12|0},${108+rnd()*14|0})`; g.fillRect(x,y,w,h); g.strokeStyle='rgba(90,84,40,.18)'; g.lineWidth=1;
@@ -1048,6 +1051,13 @@ const tCoffer=toTex(cCoffer);
     mcPanel('bridge',(P0.x0+P0.x1)/2,-.25,-42.9,0,2.4); }
   for(const [za,zb] of [[-47.3,-45.4],[-41.6,-38.9]]){ let k=za; while(zb-k>.3){ const w=Math.min(2.9,zb-k); const m=mcPanel('fence',121.9,0,k+w/2,Math.PI/2,1.5); mcLoad('fence',()=>m.scale.set(w,1.5,1)); m.scale.set(w,1.5,1); k+=w; } block(121.7,za,122.1,zb,'castle'); }
   mcPanel('gate',121.9,0,-43.5,Math.PI/2,2.05); block(121.6,-45.4,122.2,-41.6,'castle'); }
+/* 二の丸御殿 大広間: お城さんぽ共通の素木の欄間（鴨居の上）と、黒漆の飾り具足・刀掛け。
+   松本城は黒漆の外観と素木・木組みを生かした内部が持ち味なので、金の欄間は使わない */
+if(EDO){ const fy=HALL.fy;
+  [[125.6,'rm_shiraki_matsu'],[130.6,'rm_shiraki_sakura'],[135.6,'rm_shiraki_fuji'],[140.6,'rm_shiraki_ogi'],[145.6,'rm_shiraki_hanabishi'],[150.4,'rm_shiraki_mon']].forEach(([x,n])=>EDO.put(GE,n,x,fy+2.42,-50.56,{yaw:Math.PI,h:.72}));
+  [[127.4,'rm_shiraki_tsuru'],[131.8,'rm_shiraki_matsu'],[144.4,'rm_shiraki_sakura'],[148.8,'rm_shiraki_fuji']].forEach(([x,n])=>EDO.put(GE,n,x,fy+2.3,-63.44,{yaw:0,h:.72}));
+  EDO.put(GE,'gk_toko2',124.7,fy+.01,-62.5); block(124.3,-62.9,125.1,-62.1,'castle');
+  EDO.put(GE,'i_katanakake',149.6,fy+.01,-63.25,{yaw:0}); }
 /* townspeople's houses (町家) */
 function machiyaBoxGeo(w,h,d){ const g=new THREE.BoxGeometry(w,h,d),u=g.attributes.uv,b=1; for(let f=0;f<6;f++) for(let k=0;k<4;k++){ const i=f*4+k; if(f===4||f===5) u.setX(i,u.getX(i)*b); else u.setXY(i,.5,.92); } return g; }
 function machiya(cx,cz,ry,w,d,dozo){ const M0=TM(cx,0,cz,ry),h=4.8,hw=(w-.15)/2;
