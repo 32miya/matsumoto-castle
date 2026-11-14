@@ -1443,8 +1443,11 @@ const mapCM=mkMap(gc,BSETS.modern),mapCE=mkMap(gcE,BSETS.edo); let mapC=mapCM; c
 { const ex=mapCE.getContext('2d'); ex.fillStyle='#5a4532'; ex.fillRect((-31-DX0)*GS,(177-DZ0)*GS,9*GS,20*GS); ex.fillRect((-27-DX0)*GS,(208.5-DZ0)*GS,14*GS,23*GS); ex.fillRect((130-DX0)*GS,(208.5-DZ0)*GS,8*GS,23*GS);
   mctx.fillStyle='#a8291c'; mctx.fillRect((-12-DX0)*GS,(69-DZ0)*GS,3.2*GS,32*GS); mctx.fillStyle='#8f8a80'; mctx.fillRect((-27-DX0)*GS,(209-DZ0)*GS,14*GS,22*GS); mctx.fillRect((129.5-DX0)*GS,(209-DZ0)*GS,9*GS,22*GS); }
 const miniC=$('miniC'),mini2=miniC.getContext('2d');
-function drawMini(){ const r=miniC.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1),S=Math.round(r.width*dpr); if(miniC.width!==S){ miniC.width=miniC.height=S; }
-  const span=150*GS,cx=(P.x-DX0)*GS,cz=(P.z-DZ0)*GS; mini2.fillStyle='#5a5852'; mini2.fillRect(0,0,S,S); mini2.drawImage(mapC,cx-span/2,cz-span/2,span,span,0,0,S,S);
+/* 小さな地図: iPhone の Safari は、元の絵からはみ出す範囲を drawImage で切り出すと何も描かない（黒くなる）ことがあるので、はみ出さない範囲だけを切り出して描く。
+   画面を回したときに canvas を作り直して黒くなるのを防ぐため、canvas は大きくするときだけ作り直す */
+function drawMini(){ const r=miniC.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1),need=Math.max(2,Math.round(r.width*dpr)); if(miniC.width<need){ miniC.width=miniC.height=need; } const S=miniC.width;
+  const span=150*GS,cx=(P.x-DX0)*GS,cz=(P.z-DZ0)*GS,sx=cx-span/2,sy=cz-span/2,k=S/span,MW_=mapC.width,MH_=mapC.height; mini2.fillStyle='#5a5852'; mini2.fillRect(0,0,S,S);
+  const ix0=Math.max(0,sx),iy0=Math.max(0,sy),ix1=Math.min(MW_,sx+span),iy1=Math.min(MH_,sy+span); if(ix1-ix0>1&&iy1-iy0>1){ try{ mini2.drawImage(mapC,ix0,iy0,ix1-ix0,iy1-iy0,(ix0-sx)*k,(iy0-sy)*k,(ix1-ix0)*k,(iy1-iy0)*k); }catch(e){} }
   mini2.save(); mini2.translate(S/2,S/2); mini2.rotate(-P.yaw); mini2.fillStyle='#fff'; mini2.strokeStyle='#d2452c'; mini2.lineWidth=2*dpr; mini2.beginPath(); mini2.moveTo(0,-9*dpr); mini2.lineTo(6*dpr,7*dpr); mini2.lineTo(0,3*dpr); mini2.lineTo(-6*dpr,7*dpr); mini2.closePath(); mini2.fill(); mini2.stroke(); mini2.restore(); }
 const MAPR={x0:-200,x1:260,z0:-180,z1:320};
 function drawMap(){ const c=$('mapC'),r=c.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1); c.width=Math.round(r.width*dpr); c.height=Math.round(r.height*dpr);
