@@ -1545,6 +1545,9 @@ function drawMap(){ const c=$('mapC'),r=c.getBoundingClientRect(),dpr=Math.min(2
   const g=c.getContext('2d'); g.drawImage(mapC,(MAPR.x0-DX0)*GS,(MAPR.z0-DZ0)*GS,(MAPR.x1-MAPR.x0)*GS,(MAPR.z1-MAPR.z0)*GS,0,0,c.width,c.height);
   $('meDot').style.left=((P.x-MAPR.x0)/(MAPR.x1-MAPR.x0)*100)+'%'; $('meDot').style.top=((P.z-MAPR.z0)/(MAPR.z1-MAPR.z0)*100)+'%'; }
 let curSpots=SPOTS.filter(s=>!s.edoOnly);
+/* お城さんぽ共通（/oshiro/common/fuda.js の見どころ札・写真モード）へ、名所と自分の位置を知らせる窓口 */
+window.OshiroGame={ spots:()=>spotList(), all:()=>SPOTS, me:()=>({x:P.x,z:P.z,level:P.level,room:!!P.room,walk:P.mode==='walk',tour:typeof tour!=='undefined'&&!!tour.on}), started:()=>typeof started==='undefined'||!!started, warpAt:0 };
+{ const _tp=teleport; teleport=function(s){ window.OshiroGame.warpAt=performance.now(); return _tp.apply(this,arguments); }; }
 function spotList(){ return SPOTS.filter(s=>MODE==='edo'?!s.modernOnly:!s.edoOnly).map(s=>MODE==='edo'&&s.edo?Object.assign({},s,s.edo):s); }
 function buildPins(){ const fr=$('mapFrame'),list=$('spotList'); fr.querySelectorAll('.pin').forEach(e=>e.remove()); list.innerHTML='';
   curSpots.forEach(s=>{ const b=document.createElement('button'); b.className='pin'; b.textContent=s.name; b.style.left=((s.at[0]-MAPR.x0)/(MAPR.x1-MAPR.x0)*100)+'%'; b.style.top=((s.at[1]-MAPR.z0)/(MAPR.z1-MAPR.z0)*100)+'%'; b.onclick=()=>{ teleport(s); closeMap(); }; fr.appendChild(b);
@@ -1639,6 +1642,7 @@ requestAnimationFrame(frame);
 })();
 </script>
 <script src="/oshiro/common/goshuin.js"></script>
+<script src="/oshiro/common/fuda.js"></script>
 <!-- oshiro-portal:end -->
 <style id="landCSS">
 /* スマホ横向き: 上下が狭いので、札・地図・ボタンを小さく端へまとめる（お城さんぽ共通の横向きの作り） */
