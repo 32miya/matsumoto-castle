@@ -1545,5 +1545,20 @@ requestAnimationFrame(frame);
 </script>
 <script src="/oshiro/common/goshuin.js"></script>
 <!-- oshiro-portal:end -->
+<style id="landCSS">
+/* スマホ横向き: 上下が狭いので、札・地図・ボタンを小さく端へまとめる（お城さんぽ共通の横向きの作り） */
+@media (orientation:landscape) and (max-height:500px){
+ .place{top:calc(env(safe-area-inset-top,0px) + 6px);max-width:40%} .place .eyebrow,#eyebrow{display:none} .place .area{font-size:15px;margin-top:0}
+ #mini{top:calc(env(safe-area-inset-top,0px) + 6px);width:92px;height:92px}
+ .topbtns{top:calc(env(safe-area-inset-top,0px) + 6px);right:calc(env(safe-area-inset-right,0px) + 110px);gap:4px} .topbtns button{height:30px;padding:0 10px;font-size:12px}
+ #menu{top:calc(env(safe-area-inset-top,0px) + 42px);right:calc(env(safe-area-inset-right,0px) + 110px);max-height:calc(100% - 56px);overflow:auto}
+ #pjChip{top:calc(env(safe-area-inset-top,0px) + 44px);padding:4px 9px;font-size:11px}
+ .pbase{width:96px;height:96px;bottom:calc(env(safe-area-inset-bottom,0px) + 34px);opacity:.4} .pbase i{width:40px;height:40px;margin:-20px 0 0 -20px} .pbase span{display:none}
+ .pbtn{bottom:calc(env(safe-area-inset-bottom,0px) + 136px);height:30px;width:50px;font-size:11px;opacity:.85}
+ #poi,body.touchui #poi{bottom:calc(env(safe-area-inset-bottom,0px) + 14px);max-width:calc(100% - 300px);padding:6px 12px 6px 10px} #poi .nm{font-size:14px}
+ #hint,body.touchui #hint{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 60px);max-width:calc(100% - 300px);font-size:11.5px;padding:6px 10px}
+ #card{max-height:calc(100% - 20px);overflow:auto}
+}
+</style>
 </body>
 </html>
